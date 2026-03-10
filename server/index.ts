@@ -1,16 +1,16 @@
 import express, { Express, Request, Response } from 'express';
 import path from 'path';
-import { fileURLToPath } from 'url';
+// fileURLToPath not used - using process.cwd() instead
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// ESM-safe __dirname using process.cwd() for Railway esbuild compatibility
+const __dirname = process.cwd();
 
 const app: Express = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '../dist/client')));
+app.use(express.static(path.join(__dirname, 'dist', 'client')));
 
 /**
  * PNG Tracker Backend - LNG Supply Monitoring & Alert System
