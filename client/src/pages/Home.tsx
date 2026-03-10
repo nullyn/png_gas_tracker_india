@@ -220,6 +220,9 @@ export default function Home() {
           ))}
         </div>
 
+        {/* SEO: Visually hidden H1 for crawlers — visible title is in the header */}
+        <h1 className="sr-only">PNG Gas Tracker India — Real-Time LNG Supply Early-Warning System for India</h1>
+
         {/* Main Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="bg-white border border-gray-200 p-1">
@@ -231,6 +234,7 @@ export default function Home() {
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-4 mt-4">
+            <h2 className="sr-only">LNG Supply Overview — Import Trends, Risk Score, and Shipping Routes</h2>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <Card className="bg-white">
                 <CardHeader className="pb-2 border-b">
@@ -382,6 +386,7 @@ export default function Home() {
 
           {/* Futures & Technicals Tab */}
           <TabsContent value="futures" className="space-y-4 mt-4">
+            <h2 className="sr-only">LNG Futures and Technical Analysis — Henry Hub, TTF, Brent, India Gas Stocks</h2>
             {Object.entries(CATEGORY_LABELS).map(([cat, label]) => {
               const items = futuresByCategory[cat] ?? [];
               if (items.length === 0) return null;
@@ -539,6 +544,7 @@ export default function Home() {
 
           {/* Terminal Reserves Tab */}
           <TabsContent value="reserves" className="space-y-4 mt-4">
+            <h2 className="sr-only">India LNG Terminal Storage Reserves — Dahej, Hazira, Kochi, Dabhol, Ennore, Mundra</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Card className="bg-white border-2 border-blue-200">
                 <CardContent className="p-4 text-center">
@@ -632,6 +638,7 @@ export default function Home() {
 
           {/* Geopolitical Tab */}
           <TabsContent value="geopolitical" className="space-y-4 mt-4">
+            <h2 className="sr-only">Geopolitical Risk Alerts — Middle East, Strait of Hormuz, Red Sea, LNG Supply Disruptions</h2>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <Card className="bg-white">
                 <CardHeader className="pb-2 border-b">
@@ -693,10 +700,11 @@ export default function Home() {
           </TabsContent>
         </Tabs>
 
+        {/* SEO: Visible H2 in the data sources footer */}
         {/* Data Sources Footer */}
         <Card className="bg-gray-50 border-gray-200">
           <CardHeader className="pb-2 border-b">
-            <CardTitle className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Data Sources & Refresh Schedule</CardTitle>
+            <h2 className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Data Sources &amp; Refresh Schedule</h2>
           </CardHeader>
           <CardContent className="pt-3">
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">

@@ -46,3 +46,12 @@
 - [ ] Add last-updated source + date+time to every metric card
 - [ ] Rename app from "PNG Tracker India" to "PNG Gas Tracker India"
 - [ ] Add GitHub logo in footer linking to the repository
+
+## SEO Fixes
+- [x] Add meta description (155 chars, within 50-160 limit)
+- [x] Add meta keywords (14 relevant terms: PNG gas India, LNG supply, PNGRB, JKM, etc.)
+- [x] Add H1 (sr-only) for crawlers
+- [x] Add H2 headings to all 4 tab sections (sr-only)
+- [x] Add visible H2 to Data Sources footer
+- [x] Add Open Graph and Twitter Card meta tags
+- [x] Update page title to "PNG Gas Tracker India — LNG Supply Early-Warning System"
