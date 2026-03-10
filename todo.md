@@ -38,3 +38,11 @@
 - [ ] Historical trend charts with more than 1 day of data (accumulates over time)
 - [ ] News feed scraper for geopolitical events (currently using curated static data)
 - [ ] PNGRB official data scraper for actual import volumes
+
+## UI Improvements (Round 2)
+- [ ] Improve app icon — replace dull icon with a vivid flame/gas-themed SVG
+- [ ] Clarify key supplier status bars — label what the bar length represents (current supply capacity %)
+- [ ] Fix supply sources pie chart being cut from top — add proper padding/overflow
+- [ ] Add last-updated source + date+time to every metric card
+- [ ] Rename app from "PNG Tracker India" to "PNG Gas Tracker India"
+- [ ] Add GitHub logo in footer linking to the repository

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { trpc } from '@/lib/trpc';
-import { AlertCircle, TrendingDown, TrendingUp, Zap, AlertTriangle, Clock, ExternalLink, RefreshCw, Activity, BarChart2, Database, Shield } from 'lucide-react';
+import { AlertCircle, TrendingDown, TrendingUp, Flame, AlertTriangle, Clock, ExternalLink, RefreshCw, Activity, BarChart2, Database, Shield, Github } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -148,11 +148,11 @@ export default function Home() {
       <div className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
         <div className="max-w-screen-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-gradient-to-br from-blue-700 to-blue-900 rounded flex items-center justify-center">
-              <Zap className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{background: 'linear-gradient(135deg, #f97316 0%, #dc2626 50%, #7c3aed 100%)'}}>
+              <Flame className="w-6 h-6 text-white drop-shadow" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-gray-900 tracking-tight">PNG TRACKER INDIA</h1>
+              <h1 className="text-xl font-bold text-gray-900 tracking-tight">PNG GAS TRACKER INDIA</h1>
               <p className="text-xs text-gray-500">LNG Supply Early-Warning System · Middle East Risk Monitor</p>
             </div>
           </div>
@@ -190,12 +190,12 @@ export default function Home() {
         {/* KPI Row */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           {([
-            { label: 'RISK SCORE', value: `${riskScore.toFixed(0)}%`, sub: (supplyMetrics?.riskLevel ?? 'high').toUpperCase(), color: getRiskColor(riskScore), src: 'Composite Algorithm', bg: getRiskBg(riskScore) },
-            { label: 'LNG IMPORTS', value: `${lngImports.toFixed(1)}`, unit: 'MMTPA', change: importChange, src: 'PNGRB' },
-            { label: 'LNG PRICE', value: `$${lngPrice.toFixed(2)}`, unit: '/MMBtu', change: priceChange, src: 'Yahoo Finance NG=F' },
-            { label: 'SHIP DELAY', value: `${shippingDelay.toFixed(1)}`, unit: 'days', sub: 'Normal: 2 days', src: 'MarineTraffic AIS' },
-            { label: 'RESERVE DAYS', value: `${avgReserveDays.toFixed(1)}`, unit: 'days', sub: 'Crude oil: 25 days', color: avgReserveDays < 3 ? 'text-red-600' : 'text-orange-600', src: 'PNGRB Terminals' },
-            { label: 'HENRY HUB', value: `$${(ngFuture?.price ?? 3.067).toFixed(3)}`, unit: '/MMBtu', change: ngFuture?.changePercent, src: 'Yahoo Finance' },
+            { label: 'RISK SCORE', value: `${riskScore.toFixed(0)}%`, sub: (supplyMetrics?.riskLevel ?? 'high').toUpperCase(), color: getRiskColor(riskScore), src: 'Composite Algorithm', srcTime: supplyMetrics?.fetchedAt, bg: getRiskBg(riskScore) },
+            { label: 'LNG IMPORTS', value: `${lngImports.toFixed(1)}`, unit: 'MMTPA', change: importChange, src: 'PNGRB', srcTime: supplyMetrics?.fetchedAt },
+            { label: 'LNG PRICE', value: `$${lngPrice.toFixed(2)}`, unit: '/MMBtu', change: priceChange, src: 'Yahoo Finance NG=F', srcTime: supplyMetrics?.fetchedAt },
+            { label: 'SHIP DELAY', value: `${shippingDelay.toFixed(1)}`, unit: 'days', sub: 'Normal: 2 days', src: 'MarineTraffic AIS', srcTime: supplyMetrics?.fetchedAt },
+            { label: 'RESERVE DAYS', value: `${avgReserveDays.toFixed(1)}`, unit: 'days', sub: 'Crude oil: 25 days', color: avgReserveDays < 3 ? 'text-red-600' : 'text-orange-600', src: 'PNGRB Terminals', srcTime: supplyMetrics?.fetchedAt },
+            { label: 'HENRY HUB', value: `$${(ngFuture?.price ?? 3.067).toFixed(3)}`, unit: '/MMBtu', change: ngFuture?.changePercent, src: 'Yahoo Finance', srcTime: ngFuture?.fetchedAt },
           ] as any[]).map((kpi: any, i: number) => (
             <Card key={i} className={`bg-white border hover:shadow-md transition-shadow ${kpi.bg ?? ''}`}>
               <CardContent className="p-3">
@@ -211,7 +211,10 @@ export default function Home() {
                   </div>
                 )}
                 {kpi.sub && <p className="text-xs text-gray-500 mt-0.5">{kpi.sub}</p>}
-                <p className="text-xs text-blue-600 mt-1 truncate">{kpi.src}</p>
+                <div className="mt-1.5 pt-1.5 border-t border-gray-100">
+                  <p className="text-xs text-blue-600 font-medium truncate">{kpi.src}</p>
+                  {kpi.srcTime && <p className="text-xs text-gray-400">{new Date(kpi.srcTime).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false })}</p>}
+                </div>
               </CardContent>
             </Card>
           ))}
@@ -290,14 +293,19 @@ export default function Home() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               <Card className="bg-white">
                 <CardHeader className="pb-2 border-b">
-                  <CardTitle className="text-sm font-semibold text-gray-700">SUPPLY SOURCES</CardTitle>
-                  <CardDescription className="text-xs">Source: PNGRB Annual Report 2024-25</CardDescription>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-sm font-semibold text-gray-700">SUPPLY SOURCES</CardTitle>
+                      <CardDescription className="text-xs">Source: PNGRB Annual Report 2024-25</CardDescription>
+                    </div>
+                    <LiveBadge time={supplyMetrics?.fetchedAt} />
+                  </div>
                 </CardHeader>
                 <CardContent className="pt-4">
-                  <ResponsiveContainer width="100%" height={200}>
-                    <PieChart>
-                      <Pie data={SUPPLY_SOURCES} cx="50%" cy="50%" outerRadius={75} dataKey="value"
-                        label={({ name, value }) => `${name} ${value}%`} labelLine={false}>
+                  <ResponsiveContainer width="100%" height={240}>
+                    <PieChart margin={{ top: 20, right: 20, bottom: 10, left: 20 }}>
+                      <Pie data={SUPPLY_SOURCES} cx="50%" cy="55%" outerRadius={80} dataKey="value"
+                        label={({ name, value }) => `${name} ${value}%`} labelLine={true}>
                         {SUPPLY_SOURCES.map((e, i) => <Cell key={i} fill={e.fill} />)}
                       </Pie>
                       <Tooltip />
@@ -334,27 +342,39 @@ export default function Home() {
 
               <Card className="bg-white">
                 <CardHeader className="pb-2 border-b">
-                  <CardTitle className="text-sm font-semibold text-gray-700">KEY SUPPLIER STATUS</CardTitle>
-                  <CardDescription className="text-xs">Source: Port Authority Data · S&P Global Platts</CardDescription>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-sm font-semibold text-gray-700">KEY SUPPLIER STATUS</CardTitle>
+                      <CardDescription className="text-xs">Source: Port Authority Data · S&P Global Platts</CardDescription>
+                    </div>
+                    <LiveBadge time={supplyMetrics?.fetchedAt} />
+                  </div>
                 </CardHeader>
                 <CardContent className="pt-4 space-y-3">
+                  <p className="text-xs text-gray-500 bg-blue-50 border border-blue-100 rounded px-2 py-1.5">
+                    <span className="font-semibold text-blue-700">Bar = Current supply delivery capacity</span> as % of contracted volume. 100% = full contracted supply flowing normally. Disruptions reduce this below 100%.
+                  </p>
                   {[
-                    { name: 'Qatar (50%)', status: 'AFFECTED', pct: 30, color: 'bg-red-500', badgeColor: 'bg-red-100 text-red-800 border-red-300' },
-                    { name: 'UAE (20%)', status: 'ELEVATED', pct: 60, color: 'bg-orange-500', badgeColor: 'bg-orange-100 text-orange-800 border-orange-300' },
-                    { name: 'Australia (15%)', status: 'NORMAL', pct: 85, color: 'bg-green-500', badgeColor: 'bg-green-100 text-green-800 border-green-300' },
-                    { name: 'Others (15%)', status: 'NORMAL', pct: 75, color: 'bg-blue-500', badgeColor: 'bg-green-100 text-green-800 border-green-300' },
+                    { name: 'Qatar (50% of imports)', status: 'AFFECTED', pct: 30, color: 'bg-red-500', badgeColor: 'bg-red-100 text-red-800 border-red-300', note: '30% of contracted volume delivering — Hormuz risk' },
+                    { name: 'UAE (20% of imports)', status: 'ELEVATED', pct: 60, color: 'bg-orange-500', badgeColor: 'bg-orange-100 text-orange-800 border-orange-300', note: '60% of contracted volume delivering — delays' },
+                    { name: 'Australia (15% of imports)', status: 'NORMAL', pct: 85, color: 'bg-green-500', badgeColor: 'bg-green-100 text-green-800 border-green-300', note: '85% of contracted volume delivering — minor delays' },
+                    { name: 'Others (15% of imports)', status: 'NORMAL', pct: 75, color: 'bg-blue-500', badgeColor: 'bg-green-100 text-green-800 border-green-300', note: '75% of contracted volume delivering' },
                   ].map((s, i) => (
                     <div key={i}>
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-sm font-medium text-gray-800">{s.name}</span>
-                        <StaticBadge label={s.status} color={s.badgeColor} />
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-gray-700">{s.pct}%</span>
+                          <StaticBadge label={s.status} color={s.badgeColor} />
+                        </div>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-1.5">
-                        <div className={`${s.color} h-1.5 rounded-full`} style={{ width: `${s.pct}%` }} />
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className={`${s.color} h-2 rounded-full transition-all`} style={{ width: `${s.pct}%` }} />
                       </div>
+                      <p className="text-xs text-gray-400 mt-0.5">{s.note}</p>
                     </div>
                   ))}
-                  <p className="text-xs text-gray-400 mt-2">Source: Port Authority of Qatar · ADNOC UAE</p>
+                  <p className="text-xs text-gray-400 mt-2">Source: Port Authority of Qatar · ADNOC UAE · {supplyMetrics?.fetchedAt ? new Date(supplyMetrics.fetchedAt).toLocaleString('en-IN') : 'N/A'}</p>
                 </CardContent>
               </Card>
             </div>
@@ -703,10 +723,21 @@ export default function Home() {
                 </div>
               ))}
             </div>
-            <p className="text-xs text-gray-400 mt-3 text-center">
-              PNG Tracker India · LNG Supply Early-Warning System · All timestamps in IST ·
-              Last system refresh: {lastRefresh.toLocaleString('en-IN')}
-            </p>
+            <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-200">
+              <p className="text-xs text-gray-400">
+                PNG Gas Tracker India · LNG Supply Early-Warning System · All timestamps in IST ·
+                Last system refresh: {lastRefresh.toLocaleString('en-IN')}
+              </p>
+              <a
+                href="https://github.com/nullyn/png_gas_tracker_india"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 transition-colors group"
+              >
+                <Github className="w-4 h-4 group-hover:text-gray-900" />
+                <span className="font-medium">View on GitHub</span>
+              </a>
+            </div>
           </CardContent>
         </Card>
       </div>
