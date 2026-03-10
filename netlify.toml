@@ -2,6 +2,17 @@
   command = "pnpm run build"
   publish = "dist/public"
 
+# Proxy all API calls to the Railway backend
+# IMPORTANT: After deploying to Railway, set RAILWAY_BACKEND_URL
+# in Netlify → Site configuration → Environment variables
+# e.g. RAILWAY_BACKEND_URL = https://png-gas-tracker-india.up.railway.app
+[[redirects]]
+  from = "/api/*"
+  to = ":RAILWAY_BACKEND_URL/api/:splat"
+  status = 200
+  force = true
+
+# SPA fallback — must be last
 [[redirects]]
   from = "/*"
   to = "/index.html"
