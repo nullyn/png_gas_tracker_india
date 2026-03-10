@@ -9,10 +9,7 @@ import viteConfig from "../../vite.config";
 
 // ESM-safe __dirname — works in both dev (import.meta.dirname) and Railway's
 // esbuild-bundled production output where import.meta.dirname may be undefined.
-const _dirname: string =
-  typeof import.meta.dirname === "string"
-    ? import.meta.dirname
-    : path.dirname(fileURLToPath(import.meta.url));
+const _dirname: string = process.cwd();
 
 export async function setupVite(app: Express, server: Server) {
   const serverOptions = {
