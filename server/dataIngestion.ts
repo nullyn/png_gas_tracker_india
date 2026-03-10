@@ -453,7 +453,7 @@ async function checkAndGenerateAlerts(
     });
 
     // Send owner notification for high/critical alerts
-    if (alertData.severity === "critical" || alertData.severity === "high") {
+    if (false /* ALERTS_DISABLED */ && (alertData.severity === "critical" || alertData.severity === "high")) {
       try {
         await notifyOwner({
           title: `🚨 PNG Tracker Alert: ${alertData.title}`,
