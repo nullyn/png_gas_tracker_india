@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE `supply_metrics` ADD COLUMN IF NOT EXISTS `jkm_estimated_usd` float;\nALTER TABLE `supply_metrics` ADD COLUMN IF NOT EXISTS `jkm_hh_spread` float;\nALTER TABLE `supply_metrics` ADD COLUMN IF NOT EXISTS `jkm_ttf_spread` float;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2xtu8A5c9Ezv48B.root --database CrTH6sNQgWLoyKW7kTGMzU --execute ALTER TABLE `supply_metrics` ADD COLUMN IF NOT EXISTS `jkm_estimated_usd` float;\nALTER TABLE `supply_metrics` ADD COLUMN IF NOT EXISTS `jkm_hh_spread` float;\nALTER TABLE `supply_metrics` ADD COLUMN IF NOT EXISTS `jkm_ttf_spread` float;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1915
+}

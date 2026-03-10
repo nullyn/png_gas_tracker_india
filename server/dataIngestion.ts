@@ -28,6 +28,10 @@ export const INSTRUMENTS = [
   { symbol: "GSPL.NS",      name: "Gujarat State Petronet Ltd",         category: "india_gas_stock" as const, currency: "INR", unit: "INR" },
   { symbol: "ONGC.NS",      name: "ONGC Ltd",                           category: "india_gas_stock" as const, currency: "INR", unit: "INR" },
   { symbol: "IOC.NS",       name: "Indian Oil Corporation",             category: "india_gas_stock" as const, currency: "INR", unit: "INR" },
+  // JKM Proxies (Asia LNG spot price)
+  { symbol: "LNGG",         name: "Roundhill Alerian LNG ETF (JKM Proxy)", category: "lng_benchmark" as const, currency: "USD", unit: "USD" },
+  { symbol: "GLNG",         name: "Golar LNG (Asia-Pacific LNG Shipping)",  category: "lng_benchmark" as const, currency: "USD", unit: "USD" },
+  { symbol: "FLNG",         name: "FLEX LNG (Spot LNG Shipping Rates)",     category: "lng_benchmark" as const, currency: "USD", unit: "USD" },
   // Macro
   { symbol: "GC=F",         name: "Gold Futures (Safe Haven Proxy)",    category: "macro" as const,         currency: "USD", unit: "$/oz" },
   { symbol: "DX-Y.NYB",     name: "US Dollar Index",                    category: "macro" as const,         currency: "USD", unit: "Index" },
@@ -220,6 +224,49 @@ export async function computeAndStoreSupplyMetrics(): Promise<void> {
     const ngPrice = ngRows[0]?.price ?? 3.0;
     const bzPrice = bzRows[0]?.price ?? 80;
 
+    // Fetch JKM proxy instruments for estimated JKM price
+    const ttfRows = await db.select().from(futuresData)
+      .where(eq(futuresData.symbol, "TTF=F"))
+      .orderBy(desc(futuresData.fetchedAt)).limit(1);
+    const lnggRows = await db.select().from(futuresData)
+      .where(eq(futuresData.symbol, "LNGG"))
+      .orderBy(desc(futuresData.fetchedAt)).limit(1);
+    const glngRows = await db.select().from(futuresData)
+      .where(eq(futuresData.symbol, "GLNG"))
+      .orderBy(desc(futuresData.fetchedAt)).limit(1);
+    const flngRows = await db.select().from(futuresData)
+      .where(eq(futuresData.symbol, "FLNG"))
+      .orderBy(desc(futuresData.fetchedAt)).limit(1);
+
+    // JKM Estimation Formula:
+    // JKM historically trades at 3.0-3.5x Henry Hub in Asia-premium environment
+    // Adjusted by: LNGG ETF momentum (global LNG sentiment) + TTF premium (European competition)
+    // + GLNG/FLNG shipping rate signals (spot market tightness)
+    const ttfPrice = ttfRows[0]?.price ?? 40; // EUR/MWh
+    const ttfChangePercent = ttfRows[0]?.changePercent ?? 0;
+    const lnggChangePercent = lnggRows[0]?.changePercent ?? 0;
+    const glngChangePercent = glngRows[0]?.changePercent ?? 0;
+    const flngChangePercent = flngRows[0]?.changePercent ?? 0;
+
+    // Base JKM = Henry Hub × 3.2 (Asia liquefaction + shipping premium)
+    const jkmBase = ngPrice * 3.2;
+    // Sentiment factor: average of LNG ETF + shipping stocks momentum (capped ±15%)
+    const sentimentFactor = 1 + Math.max(-0.15, Math.min(0.15,
+      ((lnggChangePercent + glngChangePercent + flngChangePercent) / 3) / 100
+    ));
+    // TTF premium factor: when TTF is high (>50 EUR/MWh), Europe competes with Asia → JKM premium rises
+    const ttfPremiumFactor = ttfPrice > 50 ? 1.08 : ttfPrice > 40 ? 1.04 : ttfPrice > 30 ? 1.0 : 0.96;
+    // Final JKM estimate
+    const jkmEstimated = jkmBase * sentimentFactor * ttfPremiumFactor;
+    // JKM-Henry Hub spread (Asia premium)
+    const jkmHhSpread = jkmEstimated - ngPrice;
+    // JKM vs TTF spread (convert TTF EUR/MWh to USD/MMBtu: ÷ 3.412 × exchange rate ~1.08)
+    const ttfUsdMmbtu = (ttfPrice / 3.412) * 1.08;
+    const jkmTtfSpread = jkmEstimated - ttfUsdMmbtu;
+
+    // Factor JKM into risk score: JKM > $12 = elevated, > $15 = high, > $18 = critical
+    const jkmRisk = Math.min(100, Math.max(0, ((jkmEstimated - 8) / 14) * 100));
+
     // Risk scoring algorithm
     // Price risk: Henry Hub above $4 = stress, above $6 = high, above $8 = critical
     const priceRisk = Math.min(100, Math.max(0, ((ngPrice - 2.5) / 6) * 100));
@@ -230,7 +277,8 @@ export async function computeAndStoreSupplyMetrics(): Promise<void> {
     // Shipping: based on current Red Sea / Hormuz situation
     const shippingRisk = 70;
 
-    const riskScore = (priceRisk * 0.25) + (brentRisk * 0.20) + (geoRisk * 0.35) + (shippingRisk * 0.20);
+    // Include JKM risk in composite score (replaces part of price risk weight)
+    const riskScore = (priceRisk * 0.15) + (jkmRisk * 0.15) + (brentRisk * 0.15) + (geoRisk * 0.35) + (shippingRisk * 0.20);
     const riskLevel = riskScore >= 80 ? "critical" : riskScore >= 60 ? "high" : riskScore >= 40 ? "medium" : "low";
 
     // LNG import estimate: baseline 45 MMTPA, reduced by risk
@@ -261,7 +309,10 @@ export async function computeAndStoreSupplyMetrics(): Promise<void> {
       redSeaStatus: redSeaStatus as any,
       riskScore,
       riskLevel: riskLevel as any,
-      dataSource: "Yahoo Finance (NG=F, BZ=F) + Geopolitical Analysis",
+      jkmEstimatedUsd: jkmEstimated,
+      jkmHhSpread: jkmHhSpread,
+      jkmTtfSpread: jkmTtfSpread,
+      dataSource: "Yahoo Finance (NG=F, BZ=F, LNGG, GLNG, FLNG, TTF=F) + Geopolitical Analysis",
       fetchedAt: new Date(),
     });
 

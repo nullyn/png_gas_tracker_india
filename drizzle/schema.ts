@@ -29,6 +29,10 @@ export const supplyMetrics = mysqlTable("supply_metrics", {
   redSeaStatus: mysqlEnum("red_sea_status", ["normal", "elevated", "critical"]).default("normal"),
   riskScore: float("risk_score"),
   riskLevel: mysqlEnum("risk_level", ["low", "medium", "high", "critical"]).default("low"),
+  // JKM Asia LNG spot price (estimated via proxy)
+  jkmEstimatedUsd: float("jkm_estimated_usd"),
+  jkmHhSpread: float("jkm_hh_spread"),
+  jkmTtfSpread: float("jkm_ttf_spread"),
   dataSource: varchar("data_source", { length: 255 }),
   fetchedAt: timestamp("fetched_at").defaultNow(),
 });

@@ -61,4 +61,15 @@
 - [x] Add sitemap.xml in client/public/
 - [x] Add robots.txt in client/public/
 - [x] Add JSON-LD structured data (WebApplication + Dataset schema) in index.html
-- [ ] Commit all changes to Git (pending checkpoint)
+- [x] Commit all changes to Git — pushed to user_github/main (nullyn/png_gas_tracker_india)
+
+## JKM Asia LNG Spot Price Integration
+- [ ] Confirm best real-time proxy for JKM (LNGG ETF + NG=F composite)
+- [ ] Add JKM proxy symbols to data ingestion service
+- [ ] Add JKM price history table to database schema
+- [ ] Compute JKM estimated price from proxy formula
+- [ ] Add JKM KPI card to dashboard header row
+- [ ] Add JKM vs Henry Hub spread chart (Asia premium indicator)
+- [ ] Add JKM to Futures & Technicals tab
+- [ ] Factor JKM into composite risk score
+- [ ] Add tooltip explaining JKM and proxy methodology

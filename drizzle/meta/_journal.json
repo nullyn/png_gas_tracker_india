@@ -15,6 +15,13 @@
       "when": 1773129347723,
       "tag": "0001_wild_leader",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1773132615221,
+      "tag": "0002_pale_smiling_tiger",
+      "breakpoints": true
     }
   ]
 }

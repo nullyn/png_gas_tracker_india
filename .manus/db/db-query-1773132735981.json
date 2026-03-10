@@ -1,0 +1,82 @@
+{
+  "query": "SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'supply_metrics' ORDER BY ORDINAL_POSITION;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2xtu8A5c9Ezv48B.root --database CrTH6sNQgWLoyKW7kTGMzU --execute SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'supply_metrics' ORDER BY ORDINAL_POSITION;",
+  "rows": [
+    {
+      "COLUMN_NAME": "id",
+      "DATA_TYPE": "int"
+    },
+    {
+      "COLUMN_NAME": "timestamp",
+      "DATA_TYPE": "timestamp"
+    },
+    {
+      "COLUMN_NAME": "lng_imports_mmtpa",
+      "DATA_TYPE": "float"
+    },
+    {
+      "COLUMN_NAME": "lng_imports_baseline",
+      "DATA_TYPE": "float"
+    },
+    {
+      "COLUMN_NAME": "import_change_percent",
+      "DATA_TYPE": "float"
+    },
+    {
+      "COLUMN_NAME": "lng_price_usd",
+      "DATA_TYPE": "float"
+    },
+    {
+      "COLUMN_NAME": "lng_price_baseline",
+      "DATA_TYPE": "float"
+    },
+    {
+      "COLUMN_NAME": "price_change_percent",
+      "DATA_TYPE": "float"
+    },
+    {
+      "COLUMN_NAME": "shipping_delay_days",
+      "DATA_TYPE": "float"
+    },
+    {
+      "COLUMN_NAME": "hormuz_status",
+      "DATA_TYPE": "enum"
+    },
+    {
+      "COLUMN_NAME": "red_sea_status",
+      "DATA_TYPE": "enum"
+    },
+    {
+      "COLUMN_NAME": "risk_score",
+      "DATA_TYPE": "float"
+    },
+    {
+      "COLUMN_NAME": "risk_level",
+      "DATA_TYPE": "enum"
+    },
+    {
+      "COLUMN_NAME": "data_source",
+      "DATA_TYPE": "varchar"
+    },
+    {
+      "COLUMN_NAME": "fetched_at",
+      "DATA_TYPE": "timestamp"
+    },
+    {
+      "COLUMN_NAME": "jkm_estimated_usd",
+      "DATA_TYPE": "float"
+    },
+    {
+      "COLUMN_NAME": "jkm_hh_spread",
+      "DATA_TYPE": "float"
+    },
+    {
+      "COLUMN_NAME": "jkm_ttf_spread",
+      "DATA_TYPE": "float"
+    }
+  ],
+  "messages": [],
+  "stdout": "COLUMN_NAME\tDATA_TYPE\nid\tint\ntimestamp\ttimestamp\nlng_imports_mmtpa\tfloat\nlng_imports_baseline\tfloat\nimport_change_percent\tfloat\nlng_price_usd\tfloat\nlng_price_baseline\tfloat\nprice_change_percent\tfloat\nshipping_delay_days\tfloat\nhormuz_status\tenum\nred_sea_status\tenum\nrisk_score\tfloat\nrisk_level\tenum\ndata_source\tvarchar\nfetched_at\ttimestamp\njkm_estimated_usd\tfloat\njkm_hh_spread\tfloat\njkm_ttf_spread\tfloat\n",
+  "stderr": "",
+  "execution_time_ms": 1630
+}

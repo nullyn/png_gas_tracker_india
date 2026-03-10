@@ -1,0 +1,154 @@
+{
+  "query": "DESCRIBE supply_metrics;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2xtu8A5c9Ezv48B.root --database CrTH6sNQgWLoyKW7kTGMzU --execute DESCRIBE supply_metrics;",
+  "rows": [
+    {
+      "Field": "id",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": "NULL",
+      "Extra": "auto_increment"
+    },
+    {
+      "Field": "timestamp",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": ""
+    },
+    {
+      "Field": "lng_imports_mmtpa",
+      "Type": "float",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "lng_imports_baseline",
+      "Type": "float",
+      "Null": "YES",
+      "Key": "",
+      "Default": "45",
+      "Extra": ""
+    },
+    {
+      "Field": "import_change_percent",
+      "Type": "float",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "lng_price_usd",
+      "Type": "float",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "lng_price_baseline",
+      "Type": "float",
+      "Null": "YES",
+      "Key": "",
+      "Default": "8.5",
+      "Extra": ""
+    },
+    {
+      "Field": "price_change_percent",
+      "Type": "float",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "shipping_delay_days",
+      "Type": "float",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "hormuz_status",
+      "Type": "enum('normal','elevated','critical')",
+      "Null": "YES",
+      "Key": "",
+      "Default": "normal",
+      "Extra": ""
+    },
+    {
+      "Field": "red_sea_status",
+      "Type": "enum('normal','elevated','critical')",
+      "Null": "YES",
+      "Key": "",
+      "Default": "normal",
+      "Extra": ""
+    },
+    {
+      "Field": "risk_score",
+      "Type": "float",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "risk_level",
+      "Type": "enum('low','medium','high','critical')",
+      "Null": "YES",
+      "Key": "",
+      "Default": "low",
+      "Extra": ""
+    },
+    {
+      "Field": "data_source",
+      "Type": "varchar(255)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "fetched_at",
+      "Type": "timestamp",
+      "Null": "YES",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": ""
+    },
+    {
+      "Field": "jkm_estimated_usd",
+      "Type": "float",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "jkm_hh_spread",
+      "Type": "float",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "jkm_ttf_spread",
+      "Type": "float",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    }
+  ],
+  "messages": [],
+  "stdout": "Field\tType\tNull\tKey\tDefault\tExtra\nid\tint\tNO\tPRI\tNULL\tauto_increment\ntimestamp\ttimestamp\tNO\t\tCURRENT_TIMESTAMP\t\nlng_imports_mmtpa\tfloat\tYES\t\tNULL\t\nlng_imports_baseline\tfloat\tYES\t\t45\t\nimport_change_percent\tfloat\tYES\t\tNULL\t\nlng_price_usd\tfloat\tYES\t\tNULL\t\nlng_price_baseline\tfloat\tYES\t\t8.5\t\nprice_change_percent\tfloat\tYES\t\tNULL\t\nshipping_delay_days\tfloat\tYES\t\tNULL\t\nhormuz_status\tenum('normal','elevated','critical')\tYES\t\tnormal\t\nred_sea_status\tenum('normal','elevated','critical')\tYES\t\tnormal\t\nrisk_score\tfloat\tYES\t\tNULL\t\nrisk_level\tenum('low','medium','high','critical')\tYES\t\tlow\t\ndata_source\tvarchar(255)\tYES\t\tNULL\t\nfetched_at\ttimestamp\tYES\t\tCURRENT_TIMESTAMP\t\njkm_estimated_usd\tfloat\tYES\t\tNULL\t\njkm_hh_spread\tfloat\tYES\t\tNULL\t\njkm_ttf_spread\tfloat\tYES\t\tNULL\t\n",
+  "stderr": "",
+  "execution_time_ms": 1626
+}

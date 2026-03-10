@@ -141,6 +141,26 @@ export default function Home() {
   const totalReserve = terminalData.reduce((s: number, t: any) => s + (t.currentReserveMmtpa ?? 0), 0);
   const avgReserveDays = terminalData.length ? terminalData.reduce((s: number, t: any) => s + (t.reserveDays ?? 0), 0) / terminalData.length : 2.5;
   const ngFuture = futures?.find(f => f.symbol === 'NG=F');
+  const ttfFuture = futures?.find(f => f.symbol === 'TTF=F');
+  const lnggFuture = futures?.find(f => f.symbol === 'LNGG');
+  const glngFuture = futures?.find(f => f.symbol === 'GLNG');
+  const flngFuture = futures?.find(f => f.symbol === 'FLNG');
+
+  // JKM Estimated Price (from backend or computed live)
+  const jkmEstimated = supplyMetrics?.jkmEstimatedUsd ?? (() => {
+    const ng = ngFuture?.price ?? 3.0;
+    const ttf = ttfFuture?.price ?? 40;
+    const lnggChg = lnggFuture?.changePercent ?? 0;
+    const glngChg = glngFuture?.changePercent ?? 0;
+    const flngChg = flngFuture?.changePercent ?? 0;
+    const base = ng * 3.2;
+    const sentiment = 1 + Math.max(-0.15, Math.min(0.15, ((lnggChg + glngChg + flngChg) / 3) / 100));
+    const ttfFactor = ttf > 50 ? 1.08 : ttf > 40 ? 1.04 : ttf > 30 ? 1.0 : 0.96;
+    return base * sentiment * ttfFactor;
+  })();
+  const jkmHhSpread = supplyMetrics?.jkmHhSpread ?? (jkmEstimated - (ngFuture?.price ?? 3.0));
+  const jkmTtfSpread = supplyMetrics?.jkmTtfSpread ?? 0;
+  const jkmVsBaseline = ((jkmEstimated - 11.5) / 11.5) * 100; // JKM baseline ~$11.5/MMBtu for India
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -188,6 +208,66 @@ export default function Home() {
         )}
 
         {/* KPI Row */}
+        {/* JKM Asia LNG Spot Price — Dedicated KPI Card */}
+        <Card className={`border-2 ${jkmEstimated > 15 ? 'bg-red-50 border-red-300' : jkmEstimated > 12 ? 'bg-orange-50 border-orange-300' : 'bg-blue-50 border-blue-200'}`}>
+          <CardContent className="p-4">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs font-bold text-blue-800 bg-blue-100 px-2 py-0.5 rounded uppercase tracking-wide">JKM Asia LNG Spot Price</span>
+                  <span className="text-xs text-gray-500 italic">(Estimated via Proxy)</span>
+                </div>
+                <div className="flex items-baseline gap-3">
+                  <span className={`text-4xl font-bold ${jkmEstimated > 15 ? 'text-red-600' : jkmEstimated > 12 ? 'text-orange-600' : 'text-blue-700'}`}>
+                    ${jkmEstimated.toFixed(2)}
+                  </span>
+                  <span className="text-sm text-gray-600">/MMBtu</span>
+                  <span className={`text-sm font-semibold flex items-center gap-1 ${jkmVsBaseline > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                    {jkmVsBaseline > 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+                    {jkmVsBaseline > 0 ? '+' : ''}{jkmVsBaseline.toFixed(1)}% vs baseline
+                  </span>
+                </div>
+                <div className="mt-2 grid grid-cols-3 gap-4 text-xs">
+                  <div>
+                    <p className="text-gray-500 font-medium">JKM–HH Spread</p>
+                    <p className="font-bold text-gray-800">${jkmHhSpread.toFixed(2)}/MMBtu</p>
+                    <p className="text-gray-400">Asia premium over US gas</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 font-medium">JKM–TTF Spread</p>
+                    <p className={`font-bold ${jkmTtfSpread > 2 ? 'text-red-600' : jkmTtfSpread > 0 ? 'text-orange-500' : 'text-green-600'}`}>${jkmTtfSpread.toFixed(2)}/MMBtu</p>
+                    <p className="text-gray-400">{jkmTtfSpread > 0 ? 'Asia paying premium over Europe' : 'Asia below Europe — supply relief'}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 font-medium">India Cost Impact</p>
+                    <p className={`font-bold ${jkmEstimated > 12 ? 'text-red-600' : 'text-gray-800'}`}>
+                      {jkmEstimated > 15 ? '🔴 CRITICAL' : jkmEstimated > 12 ? '🟠 ELEVATED' : jkmEstimated > 10 ? '🟡 MODERATE' : '🟢 NORMAL'}
+                    </p>
+                    <p className="text-gray-400">Normal range: $9–12/MMBtu</p>
+                  </div>
+                </div>
+              </div>
+              <div className="ml-4 text-right">
+                <div className="text-xs text-gray-500 mb-1">Proxy Sources</div>
+                <div className="text-xs text-blue-600 space-y-0.5">
+                  <p>NG=F × 3.2 (Asia premium)</p>
+                  <p>LNGG ETF sentiment</p>
+                  <p>GLNG + FLNG shipping</p>
+                  <p>TTF competition factor</p>
+                </div>
+                <div className="mt-2 text-xs text-gray-400">
+                  {supplyMetrics?.fetchedAt ? new Date(supplyMetrics.fetchedAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false }) : 'Calculating…'}
+                </div>
+                <div className="mt-1">
+                  <a href="https://www.spglobal.com/commodityinsights/en/market-insights/latest-news/lng" target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline flex items-center gap-1 justify-end">
+                    S&P Global Platts JKM <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           {([
             { label: 'RISK SCORE', value: `${riskScore.toFixed(0)}%`, sub: (supplyMetrics?.riskLevel ?? 'high').toUpperCase(), color: getRiskColor(riskScore), src: 'Composite Algorithm', srcTime: supplyMetrics?.fetchedAt, bg: getRiskBg(riskScore) },
