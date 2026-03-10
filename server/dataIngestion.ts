@@ -444,16 +444,31 @@ async function checkAndGenerateAlerts(
   }
 
   // Store alerts and send notifications for critical ones
-  for (const alertData of alertsToCreate) {
-    const inserted = await db.insert(alerts).values({
+    for (const alertData of alertsToCreate) {
+    // Check if an active alert for this metric already exists (deduplication)
+    const existingAlert = await db.select().from(alerts)
+      .where(and(
+        eq(alerts.metric, alertData.metric),
+        eq(alerts.isActive, true)
+      ))
+      .limit(1);
+    
+    // Skip if this alert already exists
+    if (existingAlert.length > 0) {
+      console.log(`[Alerts] Skipping duplicate alert for metric: ${alertData.metric}`);
+      continue;
+    }
+
+    // Insert new alert
+    await db.insert(alerts).values({
       ...alertData,
       timestamp: new Date(),
       notificationSent: false,
       isActive: true,
     });
 
-    // Send owner notification for high/critical alerts
-    if (false /* ALERTS_DISABLED */ && (alertData.severity === "critical" || alertData.severity === "high")) {
+    // Send owner notification for high/critical alerts (ENABLED)
+    if (alertData.severity === "critical" || alertData.severity === "high") {
       try {
         await notifyOwner({
           title: `🚨 PNG Tracker Alert: ${alertData.title}`,
@@ -464,7 +479,7 @@ async function checkAndGenerateAlerts(
         console.error("[Alerts] Failed to send notification:", err);
       }
     }
-  }
+  }}
 }
 
 // ─── Seed Geopolitical Events ─────────────────────────────────────────────────
