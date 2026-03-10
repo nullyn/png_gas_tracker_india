@@ -8,6 +8,26 @@ import { registerChatRoutes } from "./chat";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
+import { runFullDataRefresh } from "../dataIngestion";
+
+// ─── Data Refresh Scheduler ───────────────────────────────────────────────────
+const REFRESH_INTERVAL_MS = 15 * 60 * 1000; // every 15 minutes
+
+function startScheduler() {
+  console.log("[Scheduler] Starting data refresh scheduler (every 15 min)...");
+  // Run immediately on startup
+  runFullDataRefresh()
+    .then(r => console.log("[Scheduler] Initial refresh:", r.message))
+    .catch(err => console.error("[Scheduler] Initial refresh failed:", err));
+  // Then run on interval
+  setInterval(() => {
+    console.log("[Scheduler] Running scheduled data refresh...");
+    runFullDataRefresh()
+      .then(r => console.log("[Scheduler] Refresh:", r.message))
+      .catch(err => console.error("[Scheduler] Refresh failed:", err));
+  }, REFRESH_INTERVAL_MS);
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -52,16 +72,15 @@ async function startServer() {
   } else {
     serveStatic(app);
   }
-
   const preferredPort = parseInt(process.env.PORT || "3000");
   const port = await findAvailablePort(preferredPort);
-
   if (port !== preferredPort) {
     console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
   }
-
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
+    // Start the data refresh scheduler after server is up
+    startScheduler();
   });
 }
 
