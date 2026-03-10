@@ -55,3 +55,10 @@
 - [x] Add visible H2 to Data Sources footer
 - [x] Add Open Graph and Twitter Card meta tags
 - [x] Update page title to "PNG Gas Tracker India — LNG Supply Early-Warning System"
+
+## SEO Enhancements (Round 2)
+- [x] Add canonical URL tag in index.html
+- [x] Add sitemap.xml in client/public/
+- [x] Add robots.txt in client/public/
+- [x] Add JSON-LD structured data (WebApplication + Dataset schema) in index.html
+- [ ] Commit all changes to Git (pending checkpoint)

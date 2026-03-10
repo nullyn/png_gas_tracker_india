@@ -1,0 +1,12 @@
+# PNG Gas Tracker India - robots.txt
+# https://png-gas-tracker-india.manus.space/
+
+User-agent: *
+Allow: /
+
+# Block API and internal routes from indexing
+Disallow: /api/
+Disallow: /api/trpc/
+
+# Sitemap location
+Sitemap: https://png-gas-tracker-india.manus.space/sitemap.xml
