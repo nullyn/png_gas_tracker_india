@@ -480,6 +480,7 @@ async function checkAndGenerateAlerts(
       }
     }
   }
+}
 
 // ─── Seed Geopolitical Events ─────────────────────────────────────────────────
 export async function seedGeopoliticalEvents(): Promise<void> {
