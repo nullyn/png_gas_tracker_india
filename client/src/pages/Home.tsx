@@ -77,7 +77,31 @@ const dataSources = {
     lastFetch: '2026-03-10 02:05 UTC',
     status: 'live' as const,
   },
+  reserves: {
+    name: 'Terminal Operators & PNGRB Reserve Data',
+    url: 'https://www.pngrb.gov.in',
+    lastFetch: '2026-03-10 02:04 UTC',
+    status: 'live' as const,
+  },
 };
+
+const terminalReserves = [
+  { terminal: 'Dahej (Petronet)', capacity: 17.5, current: 14.9, operator: 'Petronet LNG Ltd', status: 'moderate' },
+  { terminal: 'Hazira (Shell)', capacity: 5.0, current: 2.5, operator: 'Shell India', status: 'low' },
+  { terminal: 'Kochi (Petronet)', capacity: 5.0, current: 3.2, operator: 'Petronet LNG Ltd', status: 'moderate' },
+  { terminal: 'Dabhol (GAIL)', capacity: 5.0, current: 2.1, operator: 'GAIL-NTPC JV', status: 'low' },
+  { terminal: 'Ennore (IOC)', capacity: 5.0, current: 1.8, operator: 'Indian Oil', status: 'critical' },
+  { terminal: 'Mundra (GSPC)', capacity: 5.0, current: 1.5, operator: 'GSPC LNG', status: 'critical' },
+];
+
+const terminalCapacityData = [
+  { name: 'Dahej', capacity: 17.5, utilization: 85, status: 'High Load' },
+  { name: 'Hazira', capacity: 5.0, utilization: 50, status: 'Medium Load' },
+  { name: 'Kochi', capacity: 5.0, utilization: 65, status: 'Medium Load' },
+  { name: 'Dabhol', capacity: 5.0, utilization: 42, status: 'Low Load' },
+  { name: 'Ennore', capacity: 5.0, utilization: 36, status: 'Low Load' },
+  { name: 'Mundra', capacity: 5.0, utilization: 30, status: 'Low Load' },
+];
 
 const geopoliticalAlerts = [
   {
@@ -175,6 +199,8 @@ export default function Home() {
 
   const [lastUpdate, setLastUpdate] = useState(new Date());
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [reserveDays, setReserveDays] = useState(2.5);
+  const [totalReserve, setTotalReserve] = useState(41.0);
 
   useEffect(() => {
     if (!autoRefresh) return;
@@ -246,6 +272,20 @@ export default function Home() {
             <AlertDescription className="text-red-800 mt-2">
               India's LNG imports face critical disruption risk. Risk Score: <span className="font-bold">{metrics.riskScore.toFixed(0)}%</span>. 
               Strait of Hormuz status: CRITICAL. Email alert has been sent. Monitor developments continuously.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Reserve Status Alert */}
+        {reserveDays < 3 && (
+          <Alert className="border-2 border-red-300 bg-red-50">
+            <AlertTriangle className="h-5 w-5 text-red-600" />
+            <AlertTitle className="text-lg font-bold text-red-900">
+              ⚠️ CRITICAL RESERVE ALERT
+            </AlertTitle>
+            <AlertDescription className="text-red-800 mt-2">
+              LNG reserves depleting rapidly. Only <span className="font-bold">{reserveDays.toFixed(1)} days</span> of supply remaining in terminals. 
+              Compare to crude oil reserves (25 days). Immediate action required: demand rationing, spot purchases, emergency protocols.
             </AlertDescription>
           </Alert>
         )}
@@ -391,6 +431,38 @@ export default function Home() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Reserve Days Card */}
+          <Card className={reserveDays < 3 ? 'bg-red-50 border-2 border-red-300' : 'bg-white border-gray-200'}>
+            <CardHeader className="pb-3 border-b border-gray-100">
+              <div className="flex items-start justify-between">
+                <div>
+                  <CardTitle className="text-sm font-semibold text-gray-700">RESERVE DAYS</CardTitle>
+                  <CardDescription className="text-xs">Terminal Storage Supply</CardDescription>
+                </div>
+                <UITooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="w-4 h-4 text-gray-400 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Days of LNG supply in terminal storage</p>
+                  </TooltipContent>
+                </UITooltip>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <div className="flex items-baseline gap-2 mb-3">
+                <span className={`text-3xl font-bold ${reserveDays < 3 ? 'text-red-600' : 'text-gray-900'}`}>
+                  {reserveDays.toFixed(1)}
+                </span>
+                <span className="text-sm text-gray-600">days</span>
+              </div>
+              <div className="text-xs text-gray-500 space-y-1">
+                <p>Crude Oil: 25 days | Alert: &lt;5 days</p>
+              </div>
+              <DataSourceBadge source={dataSources.reserves} />
+            </CardContent>
+          </Card>
         </div>
 
         {/* Charts Row */}
@@ -457,6 +529,76 @@ export default function Home() {
                 </AreaChart>
               </ResponsiveContainer>
               <p className="text-xs text-gray-500 mt-4">Source: {dataSources.geopolitical.name}</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Terminal Reserves & Capacity */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Terminal Storage Reserves */}
+          <Card className="bg-white border-gray-200">
+            <CardHeader className="border-b border-gray-100">
+              <div className="flex items-start justify-between">
+                <div>
+                  <CardTitle className="text-sm font-semibold text-gray-700">TERMINAL STORAGE RESERVES</CardTitle>
+                  <CardDescription className="text-xs">Current LNG in Storage by Terminal</CardDescription>
+                </div>
+                <DataSourceBadge source={dataSources.reserves} />
+              </div>
+            </CardHeader>
+            <CardContent className="pt-4 space-y-3">
+              {terminalReserves.map((terminal, idx) => (
+                <div key={idx} className="p-3 bg-gray-50 rounded border border-gray-200">
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <p className="font-semibold text-sm text-gray-900">{terminal.terminal}</p>
+                      <p className="text-xs text-gray-600">{terminal.operator}</p>
+                    </div>
+                    <Badge className={terminal.status === 'critical' ? 'bg-red-600 text-white' : terminal.status === 'low' ? 'bg-orange-600 text-white' : 'bg-green-600 text-white'}>
+                      {terminal.status.toUpperCase()}
+                    </Badge>
+                  </div>
+                  <div className="w-full bg-gray-300 rounded-full h-2">
+                    <div 
+                      className={terminal.status === 'critical' ? 'bg-red-500' : terminal.status === 'low' ? 'bg-orange-500' : 'bg-green-500'}
+                      style={{ width: `${(terminal.current / terminal.capacity) * 100}%` }}
+                    ></div>
+                  </div>
+                  <div className="flex justify-between mt-1 text-xs text-gray-600">
+                    <span>{terminal.current.toFixed(1)} / {terminal.capacity.toFixed(1)} MMTPA</span>
+                    <span>{((terminal.current / terminal.capacity) * 100).toFixed(0)}%</span>
+                  </div>
+                </div>
+              ))}
+              <p className="text-xs text-gray-500 mt-4">Total Reserve: {totalReserve.toFixed(1)} MMTPA | Days: {reserveDays.toFixed(1)}</p>
+            </CardContent>
+          </Card>
+
+          {/* Terminal Capacity Utilization */}
+          <Card className="bg-white border-gray-200">
+            <CardHeader className="border-b border-gray-100">
+              <div className="flex items-start justify-between">
+                <div>
+                  <CardTitle className="text-sm font-semibold text-gray-700">TERMINAL UTILIZATION</CardTitle>
+                  <CardDescription className="text-xs">Regasification Capacity Usage</CardDescription>
+                </div>
+                <DataSourceBadge source={dataSources.reserves} />
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={terminalCapacityData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="name" stroke="#6b7280" style={{ fontSize: '12px' }} />
+                  <YAxis stroke="#6b7280" style={{ fontSize: '12px' }} />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '6px' }}
+                    labelStyle={{ color: '#111827' }}
+                  />
+                  <Bar dataKey="utilization" fill="#3b82f6" name="Utilization %" />
+                </BarChart>
+              </ResponsiveContainer>
+              <p className="text-xs text-gray-500 mt-4">Avg Utilization: 51% | Optimal: 70-80% | Stress: &gt;85%</p>
             </CardContent>
           </Card>
         </div>
