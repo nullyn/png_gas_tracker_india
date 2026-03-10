@@ -483,8 +483,7 @@ async function checkAndGenerateAlerts(
 
 // ─── Seed Geopolitical Events ─────────────────────────────────────────────────
 export async function seedGeopoliticalEvents(): Promise<void> {
-  c
-    }onst db = await getDb();
+  constn db = await getDb();
   if (!db) return;
 
   const existing = await db.select().from(geopoliticalEvents).limit(1);
