@@ -479,8 +479,7 @@ async function checkAndGenerateAlerts(
         console.error("[Alerts] Failed to send notification:", err);
       }
     }
-  }}
-}
+  }
 
 // ─── Seed Geopolitical Events ─────────────────────────────────────────────────
 export async function seedGeopoliticalEvents(): Promise<void> {
