@@ -1,38 +1,17 @@
 /**
  * PNG Tracker India - Data Ingestion Service
  * Fetches real-time futures, LNG metrics, and computes technical indicators
- * Uses Twelve Data API for market data
+ * Uses Yahoo Finance API (IPv4) with Twelve Data as fallback
  */
 
+import dns from "node:dns";
 import { getDb } from "./db";
 import { futuresData, priceHistory, supplyMetrics, terminalReserves, alerts, geopoliticalEvents } from "../drizzle/schema";
 import { desc, eq, and, gte } from "drizzle-orm";
 import { notifyOwner } from "./_core/notification";
 
-// ─── Twelve Data Symbol Mapping ──────────────────────────────────────────────
-// Maps Yahoo-style symbols (used in DB/frontend) to Twelve Data symbols.
-// null = skip (not available on Twelve Data free tier).
-const TWELVE_DATA_SYMBOL_MAP: Record<string, string | null> = {
-  "NG=F": "NG",
-  "TTF=F": null,
-  "BZ=F": "BZ",
-  "CL=F": "CL",
-  "LNG": "LNG",
-  "GAIL.NS": null,
-  "PETRONET.NS": null,
-  "GUJGASLTD.NS": null,
-  "MGL.NS": null,
-  "IGL.NS": null,
-  "ATGL.NS": null,
-  "GSPL.NS": null,
-  "ONGC.NS": null,
-  "IOC.NS": null,
-  "LNGG": null,
-  "GLNG": "GLNG",
-  "FLNG": "FLNG",
-  "GC=F": "XAU/USD",
-  "DX-Y.NYB": null,
-};
+// Force IPv4 DNS resolution — Yahoo Finance blocks IPv6 from cloud IPs
+dns.setDefaultResultOrder("ipv4first");
 
 // ─── Instrument Definitions ───────────────────────────────────────────────────
 export const INSTRUMENTS = [
@@ -148,87 +127,62 @@ export async function fetchAndStoreFuturesData(): Promise<void> {
   const db = await getDb();
   if (!db) return;
 
-  const apiKey = process.env.TWELVE_DATA_API_KEY;
-  if (!apiKey) {
-    console.error("[DataIngestion] TWELVE_DATA_API_KEY not set, skipping futures fetch");
-    return;
-  }
-
   const now = new Date();
 
   for (const instrument of INSTRUMENTS) {
-    const tdSymbol = TWELVE_DATA_SYMBOL_MAP[instrument.symbol];
-    if (tdSymbol === null || tdSymbol === undefined) {
-      console.log(`[DataIngestion] Skipping ${instrument.symbol} (not available on Twelve Data)`);
-      continue;
-    }
-
     try {
-      const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(tdSymbol)}&interval=1day&outputsize=90&apikey=${apiKey}`;
-      const resp = await fetch(url);
+      const yahooUrl = `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(instrument.symbol)}?region=US&interval=1d&range=3mo`;
+      const yahooResp = await fetch(yahooUrl, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "Accept": "application/json",
+        },
+      });
+      // Small delay between requests to avoid rate limiting
+      await new Promise(r => setTimeout(r, 1000));
 
-      // Rate limiting: 8 req/min on free tier, wait 8s between calls
-      await new Promise(r => setTimeout(r, 8000));
-
-      if (!resp.ok) {
-        console.warn(`[DataIngestion] Twelve Data returned ${resp.status} for ${instrument.symbol} (${tdSymbol})`);
+      if (!yahooResp.ok) {
+        console.warn(`[DataIngestion] Yahoo Finance returned ${yahooResp.status} for ${instrument.symbol}`);
         continue;
       }
+      const resp = await yahooResp.json();
 
-      const data = await resp.json() as any;
+      const respAny = resp as any;
+      if (!respAny?.chart?.result?.[0]) continue;
 
-      if (data.status === "error") {
-        console.warn(`[DataIngestion] Twelve Data error for ${instrument.symbol} (${tdSymbol}): ${data.code} - ${data.message}`);
-        continue;
-      }
+      const result = respAny.chart.result[0];
+      const meta = result.meta;
+      const timestamps: number[] = result.timestamp || [];
+      const quotes = result.indicators?.quote?.[0] || {};
+      const closes: (number | null)[] = quotes.close || [];
+      const opens: (number | null)[] = quotes.open || [];
+      const highs: (number | null)[] = quotes.high || [];
+      const lows: (number | null)[] = quotes.low || [];
+      const volumes: (number | null)[] = quotes.volume || [];
 
-      if (!data.values || !Array.isArray(data.values) || data.values.length === 0) {
-        console.warn(`[DataIngestion] No values returned for ${instrument.symbol} (${tdSymbol})`);
-        continue;
-      }
-
-      // Twelve Data returns newest-first; reverse to chronological order (oldest-first)
-      const values = [...data.values].reverse();
-
-      const closes: number[] = [];
-      const opens: number[] = [];
-      const highs: number[] = [];
-      const lows: number[] = [];
-      const volumes: number[] = [];
-      const timestamps: Date[] = [];
-
-      for (const v of values) {
-        closes.push(parseFloat(v.close));
-        opens.push(parseFloat(v.open));
-        highs.push(parseFloat(v.high));
-        lows.push(parseFloat(v.low));
-        volumes.push(parseFloat(v.volume));
-        timestamps.push(new Date(v.datetime));
-      }
-
-      // Store price history using the original Yahoo-style symbol
+      // Store price history
       for (let i = 0; i < timestamps.length; i++) {
-        if (isNaN(closes[i])) continue;
+        if (closes[i] == null) continue;
         await db.insert(priceHistory).ignore().values({
           symbol: instrument.symbol,
-          date: timestamps[i],
-          open: isNaN(opens[i]) ? undefined : opens[i],
-          high: isNaN(highs[i]) ? undefined : highs[i],
-          low: isNaN(lows[i]) ? undefined : lows[i],
-          close: closes[i],
-          volume: isNaN(volumes[i]) ? undefined : volumes[i],
+          date: new Date(timestamps[i] * 1000),
+          open: opens[i] ?? undefined,
+          high: highs[i] ?? undefined,
+          low: lows[i] ?? undefined,
+          close: closes[i]!,
+          volume: volumes[i] ?? undefined,
         }).catch(() => {}); // ignore duplicates
       }
 
       // Compute technical indicators from close prices
-      const validCloses = closes.filter(c => !isNaN(c));
+      const validCloses = closes.filter((c): c is number => c !== null);
       const rsi = calcRSI(validCloses);
       const { macd, signal, histogram } = calcMACD(validCloses);
       const sma20 = calcSMA(validCloses, 20);
       const sma50 = calcSMA(validCloses, 50);
       const { upper, mid, lower } = calcBollinger(validCloses);
-      const currentPrice = validCloses[validCloses.length - 1];
-      const prevClose = validCloses.length >= 2 ? validCloses[validCloses.length - 2] : undefined;
+      const currentPrice = meta.regularMarketPrice ?? validCloses[validCloses.length - 1];
+      const prevClose = meta.chartPreviousClose ?? meta.previousClose;
       const changePercent = prevClose ? ((currentPrice - prevClose) / prevClose) * 100 : null;
       const techSignal = getTechnicalSignal(rsi, histogram, currentPrice, sma20, sma50);
 
@@ -238,8 +192,8 @@ export async function fetchAndStoreFuturesData(): Promise<void> {
         name: instrument.name,
         category: instrument.category,
         price: currentPrice,
-        currency: data.meta?.currency ?? instrument.currency,
-        exchange: data.meta?.exchange ?? undefined,
+        currency: meta.currency ?? instrument.currency,
+        exchange: meta.exchangeName,
         changePercent: changePercent ?? undefined,
         prevClose: prevClose ?? undefined,
         rsi14: rsi ?? undefined,
@@ -252,7 +206,7 @@ export async function fetchAndStoreFuturesData(): Promise<void> {
         bollingerMid: mid ?? undefined,
         bollingerLower: lower ?? undefined,
         technicalSignal: techSignal,
-        volume: isNaN(volumes[volumes.length - 1]) ? undefined : volumes[volumes.length - 1],
+        volume: meta.regularMarketVolume ?? undefined,
         fetchedAt: now,
       });
 
