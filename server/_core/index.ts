@@ -11,10 +11,10 @@ import { serveStatic } from "./static";
 import { runFullDataRefresh } from "../dataIngestion";
 
 // ─── Data Refresh Scheduler ───────────────────────────────────────────────────
-const REFRESH_INTERVAL_MS = 15 * 60 * 1000; // every 15 minutes
+const REFRESH_INTERVAL_MS = 60 * 60 * 1000; // every 1 hour
 
 function startScheduler() {
-  console.log("[Scheduler] Starting data refresh scheduler (every 15 min)...");
+  console.log("[Scheduler] Starting data refresh scheduler (every 1 hour)...");
   // Run immediately on startup
   runFullDataRefresh()
     .then(r => console.log("[Scheduler] Initial refresh:", r.message))
