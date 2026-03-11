@@ -7,7 +7,7 @@ import { registerOAuthRoutes } from "./oauth";
 import { registerChatRoutes } from "./chat";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
-import { serveStatic, setupVite } from "./vite";
+import { serveStatic } from "./static";
 import { runFullDataRefresh } from "../dataIngestion";
 
 // ─── Data Refresh Scheduler ───────────────────────────────────────────────────
@@ -66,12 +66,8 @@ async function startServer() {
       createContext,
     })
   );
-  // development mode uses Vite, production mode uses static files
-  if (process.env.NODE_ENV === "development") {
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
-  }
+  // production mode uses static files; development mode uses Vite dev server
+  serveStatic(app);
   const port = parseInt(process.env.PORT || "3000");
   server.listen(port, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${port}/`);
