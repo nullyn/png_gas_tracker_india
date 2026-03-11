@@ -4,7 +4,6 @@
  * Uses Yahoo Finance API via Manus Data API Hub
  */
 
-import { callDataApi } from "./_core/dataApi";
 import { getDb } from "./db";
 import { futuresData, priceHistory, supplyMetrics, terminalReserves, alerts, geopoliticalEvents } from "../drizzle/schema";
 import { desc, eq, and, gte } from "drizzle-orm";
@@ -128,14 +127,15 @@ export async function fetchAndStoreFuturesData(): Promise<void> {
 
   for (const instrument of INSTRUMENTS) {
     try {
-      const resp = await callDataApi("YahooFinance/get_stock_chart", {
-        query: {
-          symbol: instrument.symbol,
-          region: "US",
-          interval: "1d",
-          range: "3mo",
-        },
+      const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(instrument.symbol)}?region=US&interval=1d&range=3mo`;
+      const yahooResp = await fetch(yahooUrl, {
+        headers: { "User-Agent": "Mozilla/5.0" },
       });
+      if (!yahooResp.ok) {
+        console.warn(`[DataIngestion] Yahoo Finance returned ${yahooResp.status} for ${instrument.symbol}`);
+        continue;
+      }
+      const resp = await yahooResp.json();
 
       const respAny = resp as any;
       if (!respAny?.chart?.result?.[0]) continue;
