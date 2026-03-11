@@ -306,10 +306,10 @@ export default function Home() {
         {/* Main Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="bg-white border border-gray-200 p-1">
-            <TabsTrigger value="overview" className="text-xs gap-1.5"><Activity className="w-3.5 h-3.5" />Overview</TabsTrigger>
-            <TabsTrigger value="futures" className="text-xs gap-1.5"><BarChart2 className="w-3.5 h-3.5" />Futures & Technicals</TabsTrigger>
-            <TabsTrigger value="reserves" className="text-xs gap-1.5"><Database className="w-3.5 h-3.5" />Terminal Reserves</TabsTrigger>
-            <TabsTrigger value="geopolitical" className="text-xs gap-1.5"><Shield className="w-3.5 h-3.5" />Geopolitical</TabsTrigger>
+            <TabsTrigger value="overview" className="text-xs gap-1.5 data-[state=active]:bg-blue-100 data-[state=active]:text-blue-800"><Activity className="w-3.5 h-3.5" />Overview</TabsTrigger>
+            <TabsTrigger value="futures" className="text-xs gap-1.5 data-[state=active]:bg-blue-100 data-[state=active]:text-blue-800"><BarChart2 className="w-3.5 h-3.5" />Futures & Technicals</TabsTrigger>
+            <TabsTrigger value="reserves" className="text-xs gap-1.5 data-[state=active]:bg-blue-100 data-[state=active]:text-blue-800"><Database className="w-3.5 h-3.5" />Terminal Reserves</TabsTrigger>
+            <TabsTrigger value="geopolitical" className="text-xs gap-1.5 data-[state=active]:bg-blue-100 data-[state=active]:text-blue-800"><Shield className="w-3.5 h-3.5" />Geopolitical</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
