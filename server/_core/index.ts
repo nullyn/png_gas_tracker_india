@@ -12,10 +12,10 @@ import { runFullDataRefresh, backfillSupplyMetricsHistory } from "../dataIngesti
 import { initVesselTracking } from "../routers";
 
 // ─── Data Refresh Scheduler ───────────────────────────────────────────────────
-const REFRESH_INTERVAL_MS = 60 * 60 * 1000; // every 1 hour
+const REFRESH_INTERVAL_MS = 5 * 60 * 1000; // every 5 minutes (UI polls for fresh data every 5 min)
 
 function startScheduler() {
-  console.log("[Scheduler] Starting data refresh scheduler (every 1 hour)...");
+   console.log("[Scheduler] Starting data refresh scheduler (every 5 minutes)...");
   // Backfill historical data on startup (runs only once if already backfilled)
   backfillSupplyMetricsHistory(30)
     .then(() => console.log("[Scheduler] Historical backfill complete"))
