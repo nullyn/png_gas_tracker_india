@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { trpc } from '@/lib/trpc';
-import { AlertCircle, TrendingDown, TrendingUp, Flame, AlertTriangle, Clock, ExternalLink, Activity, BarChart2, Shield, Github, Heart, MessageCircle } from 'lucide-react';
+import { AlertCircle, TrendingDown, TrendingUp, Flame, AlertTriangle, Clock, ExternalLink, Activity, BarChart2, Database, Shield, Github, Heart, MessageCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
