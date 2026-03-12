@@ -380,25 +380,8 @@ export default function Home() {
           </CardContent>
         </Card>
 
-        {/* Critical Alert Banner — Below Hero */}
-        {riskScore >= 60 && (
-          <Alert className={`${getRiskBg(riskScore)} border-2`}>
-            <AlertTriangle className="h-5 w-5 text-red-600" />
-            <AlertTitle className="font-bold text-red-900">
-              {riskScore >= 80 ? '🔴 CRITICAL' : '🟠 HIGH'} ALERT — Why Risk is {riskScore >= 80 ? 'CRITICAL' : 'HIGH'}
-            </AlertTitle>
-            <AlertDescription className="text-red-800 mt-1 text-sm">
-              India's LNG supply chain is under significant stress due to Middle East geopolitical tensions.
-              Strait of Hormuz: <strong>{supplyMetrics?.hormuzStatus?.toUpperCase() ?? 'CRITICAL'}</strong> ·
-              Red Sea: <strong>{supplyMetrics?.redSeaStatus?.toUpperCase() ?? 'ELEVATED'}</strong> ·
-              Reserve buffer: <strong>{weightedReserveDays.toFixed(1)} days</strong> (vs 25 days for crude oil).
-              {riskScore >= 80 && ' Immediate contingency planning recommended.'}
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* 🟠 P1: PRIMARY KPI ROW (3 cards) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* 🟠 P1: PRIMARY KPI ROW (3 cards + optional alert) */}
+        <div className={`grid grid-cols-1 gap-4 ${riskScore >= 60 ? 'md:grid-cols-2 lg:grid-cols-4' : 'md:grid-cols-3'}`}>
           {/* JKM Spot Price */}
           <Card className={`border-2 ${jkmEstimated > 15 ? 'bg-red-50 border-red-300' : jkmEstimated > 12 ? 'bg-orange-50 border-orange-300' : 'bg-blue-50 border-blue-200'}`}>
           <CardContent className="p-4">
@@ -504,6 +487,23 @@ export default function Home() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Alert — 4th card, only when risk is elevated */}
+          {riskScore >= 60 && (
+            <Alert className={`${getRiskBg(riskScore)} border-2 self-stretch`}>
+              <AlertTriangle className="h-5 w-5 text-red-600" />
+              <AlertTitle className="font-bold text-red-900 text-sm">
+                {riskScore >= 80 ? '🔴 CRITICAL' : '🟠 HIGH'} ALERT
+              </AlertTitle>
+              <AlertDescription className="text-red-800 mt-1 text-xs leading-relaxed">
+                India's LNG supply chain is under significant stress due to Middle East geopolitical tensions.
+                Hormuz: <strong>{supplyMetrics?.hormuzStatus?.toUpperCase() ?? 'CRITICAL'}</strong> ·
+                Red Sea: <strong>{supplyMetrics?.redSeaStatus?.toUpperCase() ?? 'ELEVATED'}</strong> ·
+                Reserve buffer: <strong>{weightedReserveDays.toFixed(1)} days</strong> (vs 25 days for crude oil).
+                {riskScore >= 80 && ' Immediate contingency planning recommended.'}
+              </AlertDescription>
+            </Alert>
+          )}
         </div>
 
         {/* 🚢 GULF MARITIME VESSEL TRACKING */}
@@ -732,11 +732,11 @@ export default function Home() {
 
         {/* Main Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="bg-white border border-gray-200 p-1">
-            <TabsTrigger value="overview" className="text-xs gap-1.5 data-[state=active]:bg-blue-100 data-[state=active]:text-blue-800"><Activity className="w-3.5 h-3.5" />Overview</TabsTrigger>
-            <TabsTrigger value="futures" className="text-xs gap-1.5 data-[state=active]:bg-blue-100 data-[state=active]:text-blue-800"><BarChart2 className="w-3.5 h-3.5" />Futures & Technicals</TabsTrigger>
-            <TabsTrigger value="reserves" className="text-xs gap-1.5 data-[state=active]:bg-blue-100 data-[state=active]:text-blue-800"><Database className="w-3.5 h-3.5" />Terminal Reserves</TabsTrigger>
-            <TabsTrigger value="geopolitical" className="text-xs gap-1.5 data-[state=active]:bg-blue-100 data-[state=active]:text-blue-800"><Shield className="w-3.5 h-3.5" />Geopolitical</TabsTrigger>
+          <TabsList className="w-full bg-white border border-gray-200 p-1 h-12">
+            <TabsTrigger value="overview" className="flex-1 text-sm gap-2 h-10 data-[state=active]:bg-blue-100 data-[state=active]:text-blue-800"><Activity className="w-4 h-4" />Overview</TabsTrigger>
+            <TabsTrigger value="futures" className="flex-1 text-sm gap-2 h-10 data-[state=active]:bg-blue-100 data-[state=active]:text-blue-800"><BarChart2 className="w-4 h-4" />Futures & Technicals</TabsTrigger>
+            <TabsTrigger value="reserves" className="flex-1 text-sm gap-2 h-10 data-[state=active]:bg-blue-100 data-[state=active]:text-blue-800"><Database className="w-4 h-4" />Terminal Reserves</TabsTrigger>
+            <TabsTrigger value="geopolitical" className="flex-1 text-sm gap-2 h-10 data-[state=active]:bg-blue-100 data-[state=active]:text-blue-800"><Shield className="w-4 h-4" />Geopolitical</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
