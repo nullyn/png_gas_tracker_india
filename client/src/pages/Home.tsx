@@ -1119,7 +1119,7 @@ export default function Home() {
             <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-200">
               <p className="text-xs text-gray-400">
                 PNG Gas Tracker India · LNG Supply Early-Warning System · All timestamps in IST ·
-                Last system refresh: {lastRefresh.toLocaleString('en-IN')}
+                Last system refresh: {dataLastFetched ? dataLastFetched.toLocaleString('en-IN') : 'Fetching…'}
               </p>
               <a
                 href="https://github.com/nullyn/png_gas_tracker_india"
