@@ -1,3 +1,4 @@
+import WebSocket from "ws";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
@@ -8,7 +9,7 @@ import { desc, eq, gte, and } from "drizzle-orm";
 import { runFullDataRefresh, INSTRUMENTS, backfillSupplyMetricsHistory } from "./dataIngestion";
 import { z } from "zod/v4";
 
-// ─── Vessel Tracking (AISHub) ────────────────────────────────────────────────
+// ─── Vessel Tracking (AISStream) ────────────────────────────────────────────
 interface AisVessel {
   mmsi: string;
   imo: string;
@@ -63,58 +64,104 @@ function classifyVesselRegion(lat: number, lon: number): string {
   return "arabian_sea";
 }
 
-async function fetchAishubArea(username: string, latmin: number, latmax: number, lonmin: number, lonmax: number): Promise<AisVessel[]> {
-  const url = `https://data.aishub.net/ws.php?username=${encodeURIComponent(username)}&format=1&output=json&compress=0&latmin=${latmin}&latmax=${latmax}&lonmin=${lonmin}&lonmax=${lonmax}`;
-  const resp = await fetch(url, { signal: AbortSignal.timeout(8000) });
-  if (!resp.ok) return [];
-  const data = await resp.json() as any[];
-  if (!Array.isArray(data) || data.length < 2) return [];
-  if (data[0]?.[0]?.ERROR) return [];
-  const rows = data[1];
-  if (!Array.isArray(rows)) return [];
-  return rows.map((r: any) => ({
-    mmsi: String(r.MMSI ?? ""),
-    imo: String(r.IMO ?? ""),
-    name: String(r.NAME ?? "UNKNOWN").trim(),
-    type: Number(r.TYPE ?? 0),
-    lat: Number(r.LATITUDE ?? 0),
-    lon: Number(r.LONGITUDE ?? 0),
-    speed: Number(r.SOG ?? 0),
-    heading: Number(r.HEADING ?? 0),
-    navstat: Number(r.NAVSTAT ?? 0),
-    destination: String(r.DEST ?? "").trim(),
-  }));
+async function fetchAisstreamVessels(apiKey: string): Promise<AisVessel[]> {
+  return new Promise((resolve) => {
+    const posMap = new Map<string, AisVessel>();
+    const staticMap = new Map<string, { type: number; imo: string; destination: string }>();
+
+    let settled = false;
+    const settle = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      try { ws.terminate(); } catch { /* ignore */ }
+      const vessels: AisVessel[] = Array.from(posMap.entries()).map(([mmsi, v]) => {
+        const s = staticMap.get(mmsi);
+        return { ...v, type: s?.type ?? v.type, imo: s?.imo || v.imo, destination: s?.destination || v.destination };
+      });
+      resolve(vessels);
+    };
+
+    const timer = setTimeout(settle, 18000); // 18-second collection window
+
+    const ws = new WebSocket("wss://stream.aisstream.io/v0/stream");
+
+    ws.on("open", () => {
+      ws.send(JSON.stringify({
+        APIKey: apiKey,
+        BoundingBoxes: [
+          [[22, 47], [30.5, 64]],  // Persian Gulf + Hormuz + Gulf of Oman
+          [[11, 32], [30, 45]],    // Red Sea
+        ],
+        FilterMessageTypes: ["PositionReport", "ShipStaticData"],
+      }));
+    });
+
+    ws.on("message", (data) => {
+      try {
+        const msg = JSON.parse(data.toString()) as any;
+        const meta = msg.Metadata ?? msg.MetaData ?? {};
+        const mmsi = String(meta.MMSI ?? "");
+        if (!mmsi) return;
+
+        if (msg.MessageType === "PositionReport") {
+          const pos = msg.Message?.PositionReport ?? {};
+          posMap.set(mmsi, {
+            mmsi,
+            imo: "",
+            name: String(meta.ShipName ?? "UNKNOWN").trim(),
+            type: 0,
+            lat: Number(pos.Latitude ?? meta.Latitude ?? 0),
+            lon: Number(pos.Longitude ?? meta.Longitude ?? 0),
+            speed: Number(pos.SpeedOverGround ?? 0),
+            heading: Number(pos.TrueHeading ?? 511),
+            navstat: Number(pos.NavigationalStatus ?? 15),
+            destination: "",
+          });
+        } else if (msg.MessageType === "ShipStaticData") {
+          const info = msg.Message?.ShipStaticData ?? {};
+          staticMap.set(mmsi, {
+            type: Number(info.Type ?? 0),
+            imo: String(info.ImoNumber ?? ""),
+            destination: String(info.Destination ?? "").trim(),
+          });
+        }
+      } catch { /* ignore parse errors */ }
+    });
+
+    ws.on("error", (err) => {
+      console.warn("[VesselTracking] AISStream error:", err.message);
+      settle();
+    });
+    ws.on("close", () => settle());
+  });
 }
 
 async function getVesselSnapshot(): Promise<VesselSnapshot> {
   const now = Date.now();
   if (_vesselCache && now - _vesselCacheAt < VESSEL_CACHE_TTL) return _vesselCache;
 
-  const username = process.env.AISHUB_USERNAME ?? "";
+  const apiKey = process.env.AISSTREAM_API_KEY ?? "";
   let vessels: (AisVessel & { region: string; isLngCandidate: boolean; flag: string })[] = [];
   let isLive = false;
-  let source = "Demo data — set AISHUB_USERNAME env var (free account at aishub.net)";
+  let source = "Demo data — set AISSTREAM_API_KEY env var (free account at aisstream.io)";
 
-  if (username) {
+  if (apiKey) {
     try {
-      const [gulfRaw, redSeaRaw] = await Promise.all([
-        fetchAishubArea(username, 22, 30.5, 47, 64),
-        fetchAishubArea(username, 11, 30, 32, 45),
-      ]);
-      const raw = [...gulfRaw, ...redSeaRaw].filter(v => v.type >= 70 && v.type <= 99 && v.mmsi);
+      const raw = await fetchAisstreamVessels(apiKey);
       if (raw.length > 0) {
         vessels = raw.map(v => ({
           ...v,
           region: classifyVesselRegion(v.lat, v.lon),
-          isLngCandidate: v.type >= 80 && v.type <= 89 && (v.name.includes("GAS") || v.name.includes("LNG")),
+          isLngCandidate: v.name.includes("GAS") || v.name.includes("LNG"),
           flag: "",
         }));
         isLive = true;
-        source = "AISHub — live AIS data";
+        source = "AISStream — live AIS data";
       }
     } catch (err) {
-      console.warn("[VesselTracking] AISHub fetch failed, using demo data:", err);
-      source = "Demo data — AISHub unavailable";
+      console.warn("[VesselTracking] AISStream fetch failed, using demo data:", err);
+      source = "Demo data — AISStream unavailable";
     }
   }
   if (vessels.length === 0) vessels = VESSEL_FALLBACK;
