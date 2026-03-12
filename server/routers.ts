@@ -163,14 +163,26 @@ async function getVesselSnapshot(): Promise<VesselSnapshot> {
       const raw = await fetchAisstreamVessels(apiKey);
       console.log(`[VesselTracking] AISStream returned ${raw.length} vessels`);
       if (raw.length > 0) {
-        vessels = raw.map(v => ({
+        const liveVessels = raw.map(v => ({
           ...v,
           region: classifyVesselRegion(v.lat, v.lon),
-          isLngCandidate: v.name.includes("GAS") || v.name.includes("LNG"),
+          isLngCandidate: v.name.includes("GAS") || v.name.includes("LNG") || v.name.includes("TANKER"),
           flag: "",
         }));
         isLive = true;
-        source = "AISStream — live AIS data";
+        if (liveVessels.length >= 5) {
+          vessels = liveVessels;
+          source = `AISStream — ${liveVessels.length} live vessels`;
+        } else {
+          // Free tier returns very few vessels — merge live vessels over the demo
+          // set so the map stays useful. Live vessels override demo by MMSI.
+          const liveMmsis = new Set(liveVessels.map(v => v.mmsi));
+          vessels = [
+            ...liveVessels,
+            ...VESSEL_FALLBACK.filter(v => !liveMmsis.has(v.mmsi)),
+          ];
+          source = `AISStream — ${liveVessels.length} live vessel${liveVessels.length !== 1 ? 's' : ''} + demo context (free tier)`;
+        }
       }
     } catch (err) {
       console.warn("[VesselTracking] AISStream fetch failed, using demo data:", err);
