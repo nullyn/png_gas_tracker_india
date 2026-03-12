@@ -152,11 +152,24 @@ export default function Home() {
         date: `Day ${i + 1}`, imports: 45 - i * 0.5, price: 8.5 + i * 0.3, risk: 35 + i * 1.5,
       }));
     }
-    return [...metricsHistory].reverse().map(m => ({
-      date: new Date(m.timestamp).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: '2-digit' }),
-      imports: m.lngImportsMmtpa ? +m.lngImportsMmtpa.toFixed(1) : null,
-      price: m.lngPriceUsd ? +m.lngPriceUsd.toFixed(2) : null,
-      risk: m.riskScore ? +m.riskScore.toFixed(0) : null,
+    // Aggregate by day to avoid intra-day noise
+    const dailyData: Record<string, any> = {};
+    [...metricsHistory].reverse().forEach(m => {
+      const dateKey = new Date(m.timestamp).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: '2-digit' });
+      if (!dailyData[dateKey]) {
+        dailyData[dateKey] = { date: dateKey, imports: [], price: [], risk: [], count: 0 };
+      }
+      if (m.lngImportsMmtpa) dailyData[dateKey].imports.push(+m.lngImportsMmtpa);
+      if (m.lngPriceUsd) dailyData[dateKey].price.push(+m.lngPriceUsd);
+      if (m.riskScore) dailyData[dateKey].risk.push(+m.riskScore);
+      dailyData[dateKey].count++;
+    });
+    
+    return Object.values(dailyData).map(day => ({
+      date: day.date,
+      imports: day.imports.length > 0 ? +(day.imports.reduce((a: number, b: number) => a + b, 0) / day.imports.length).toFixed(1) : null,
+      price: day.price.length > 0 ? +(day.price.reduce((a: number, b: number) => a + b, 0) / day.price.length).toFixed(2) : null,
+      risk: day.risk.length > 0 ? +(day.risk.reduce((a: number, b: number) => a + b, 0) / day.risk.length).toFixed(0) : null,
     }));
   }, [metricsHistory]);
 
@@ -450,8 +463,7 @@ export default function Home() {
                   {kpi.unit && <span className="text-xs text-gray-500">{kpi.unit}</span>}
                 </div>
                 {kpi.change !== undefined && kpi.change !== null && (
-                  <div className={`flex items-center gap-1 text-xs font-semibold mt-0.5 ${kpi.change < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                    <span className="text-sm">{kpi.change < 0 ? '🔴' : '🟢'}</span>
+                  <div className={`flex items-center gap-0.5 text-xs font-semibold mt-0.5 ${kpi.change < 0 ? 'text-red-600' : 'text-green-600'}`}>
                     {kpi.change < 0 ? <TrendingDown className="w-3 h-3" /> : <TrendingUp className="w-3 h-3" />}
                     <span>{kpi.change < 0 ? '−' : '+'}{Math.abs(kpi.change).toFixed(1)}%</span>
                   </div>
@@ -466,7 +478,13 @@ export default function Home() {
         </div>
 
         {/* SEO: Visually hidden H1 for crawlers — visible title is in the header */}
-        <h1 className="sr-only">PNG Gas Tracker India — Real-Time LNG Supply Early-Warning System for India</h1>
+        <h1 className="sr-only">PNG LNG Piped-Gas Tracker India — Real-Time LNG Supply Early-Warning Dashboard for Indian Energy Market</h1>
+        
+        {/* SEO: Structured content for search engines */}
+        <div className="sr-only">
+          <p>Monitor India's PNG (Piped Natural Gas) and LNG (Liquefied Natural Gas) supply chain. Track LNG imports, terminal reserves at Dahej, Hazira, Kochi, Dabhol, Ennore and Mundra. Real-time monitoring of Strait of Hormuz, Red Sea shipping routes, Henry Hub and JKM spot prices, India gas sector stocks (GAIL, Petronet LNG, Gujarat Gas, MGL, IGL), and geopolitical disruption risks.</p>
+          <p>Keywords: LNG India, PNG gas tracker, natural gas supply India, Petronet LNG, PNGRB, LNG terminal reserves, Strait of Hormuz, Red Sea shipping, Henry Hub, JKM price, India gas crisis, gas supply disruption, energy market India</p>
+        </div>
 
         {/* Main Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
