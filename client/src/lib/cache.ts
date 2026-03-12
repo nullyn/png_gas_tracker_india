@@ -12,7 +12,7 @@ const CACHE_KEYS = {
   ALERTS: 'png_alerts',
   GEO_EVENTS: 'png_geo_events',
   PRICE_HISTORY: 'png_price_history',
-  VESSELS: 'png_vessels',
+  VESSELS: 'png_vessels_v2',
 };
 
 const CACHE_DURATION = {

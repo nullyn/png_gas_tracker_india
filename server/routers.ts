@@ -85,8 +85,10 @@ async function fetchAisstreamVessels(apiKey: string): Promise<AisVessel[]> {
     const timer = setTimeout(settle, 18000); // 18-second collection window
 
     const ws = new WebSocket("wss://stream.aisstream.io/v0/stream");
+    console.log("[VesselTracking] Connecting to AISStream...");
 
     ws.on("open", () => {
+      console.log("[VesselTracking] WebSocket opened, sending subscription");
       ws.send(JSON.stringify({
         APIKey: apiKey,
         BoundingBoxes: [
@@ -97,9 +99,14 @@ async function fetchAisstreamVessels(apiKey: string): Promise<AisVessel[]> {
       }));
     });
 
+    let firstMsgLogged = false;
     ws.on("message", (data) => {
       try {
         const msg = JSON.parse(data.toString()) as any;
+        if (!firstMsgLogged) {
+          firstMsgLogged = true;
+          console.log("[VesselTracking] First message type:", msg.MessageType ?? JSON.stringify(msg).slice(0, 120));
+        }
         const meta = msg.Metadata ?? msg.MetaData ?? {};
         const mmsi = String(meta.MMSI ?? "");
         if (!mmsi) return;
@@ -130,10 +137,13 @@ async function fetchAisstreamVessels(apiKey: string): Promise<AisVessel[]> {
     });
 
     ws.on("error", (err) => {
-      console.warn("[VesselTracking] AISStream error:", err.message);
+      console.warn("[VesselTracking] WebSocket error:", err.message);
       settle();
     });
-    ws.on("close", () => settle());
+    ws.on("close", (code, reason) => {
+      console.log(`[VesselTracking] WebSocket closed — code=${code} reason=${reason?.toString() || '(none)'} vessels_so_far=${posMap.size}`);
+      settle();
+    });
   });
 }
 
@@ -142,6 +152,7 @@ async function getVesselSnapshot(): Promise<VesselSnapshot> {
   if (_vesselCache && now - _vesselCacheAt < VESSEL_CACHE_TTL) return _vesselCache;
 
   const apiKey = process.env.AISSTREAM_API_KEY ?? "";
+  console.log(`[VesselTracking] getVesselSnapshot — API key ${apiKey ? `SET (${apiKey.length} chars)` : 'NOT SET'}`);
   let vessels: (AisVessel & { region: string; isLngCandidate: boolean; flag: string })[] = [];
   let isLive = false;
   let source = "Demo data — set AISSTREAM_API_KEY env var (free account at aisstream.io)";
@@ -149,6 +160,7 @@ async function getVesselSnapshot(): Promise<VesselSnapshot> {
   if (apiKey) {
     try {
       const raw = await fetchAisstreamVessels(apiKey);
+      console.log(`[VesselTracking] AISStream returned ${raw.length} vessels`);
       if (raw.length > 0) {
         vessels = raw.map(v => ({
           ...v,

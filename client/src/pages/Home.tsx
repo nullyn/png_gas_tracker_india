@@ -172,12 +172,13 @@ export default function Home() {
   const { data: chartHistory } = trpc.dashboard.priceHistory.useQuery({ symbol: selectedSymbol, days: 30 }, { enabled: needsRefresh() });
 
   const vesselCacheAge = getCacheAge(CACHE_KEYS.VESSELS);
+  const _cachedVessels = getCachedData<any>(CACHE_KEYS.VESSELS, 60 * 60 * 1000);
+  // Re-fetch if: no cache, stale (>1hr), OR cached data is demo (isLive=false — means
+  // API key was absent/invalid last time; should retry now that it may be set).
   const { data: vesselSnapshotRaw } = trpc.dashboard.vesselSnapshot.useQuery(undefined, {
-    enabled: vesselCacheAge === null || vesselCacheAge > 3600,
+    enabled: vesselCacheAge === null || vesselCacheAge > 3600 || _cachedVessels?.isLive === false,
   });
-  const [vesselData, setVesselData] = useState<any>(
-    () => getCachedData(CACHE_KEYS.VESSELS, 60 * 60 * 1000) ?? FALLBACK_VESSEL_DATA
-  );
+  const [vesselData, setVesselData] = useState<any>(() => _cachedVessels ?? FALLBACK_VESSEL_DATA);
 
   // Cache data when it arrives from API
   useEffect(() => {
@@ -380,8 +381,8 @@ export default function Home() {
           </CardContent>
         </Card>
 
-        {/* 🟠 P1: PRIMARY KPI ROW (3 cards + optional alert) */}
-        <div className={`grid grid-cols-1 gap-4 ${riskScore >= 60 ? 'md:grid-cols-2 lg:grid-cols-4' : 'md:grid-cols-3'}`}>
+        {/* 🟠 P1: PRIMARY KPI ROW — JKM left (1/3), Reserve+Shipping+Alert right (2/3) */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* JKM Spot Price */}
           <Card className={`border-2 ${jkmEstimated > 15 ? 'bg-red-50 border-red-300' : jkmEstimated > 12 ? 'bg-orange-50 border-orange-300' : 'bg-blue-50 border-blue-200'}`}>
           <CardContent className="p-4">
@@ -401,7 +402,7 @@ export default function Home() {
                     {jkmVsBaseline > 0 ? '+' : ''}{jkmVsBaseline.toFixed(1)}% vs baseline
                   </span>
                 </div>
-                <div className="mt-2 grid grid-cols-3 gap-4 text-xs">
+                <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
                   <div>
                     <p className="text-gray-500 font-medium">JKM–HH Spread</p>
                     <p className="font-bold text-gray-800">${jkmHhSpread.toFixed(2)}/MMBtu</p>
@@ -421,7 +422,7 @@ export default function Home() {
                   </div>
                 </div>
               </div>
-              <div className="ml-4 text-right">
+              <div className="ml-4 text-right hidden xl:block">
                 <div className="text-xs text-gray-500 mb-1">Proxy Sources</div>
                 <div className="text-xs text-blue-600 space-y-0.5">
                   <p>NG=F × 3.2 (Asia premium)</p>
@@ -441,6 +442,9 @@ export default function Home() {
             </div>
           </CardContent>
         </Card>
+
+          {/* Right panel: Reserve Days + Shipping Delay + Alert */}
+          <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
 
           {/* Reserve Days (Weighted) */}
           <Card className={`border-2 ${weightedReserveDays < 3 ? 'bg-red-50 border-red-300' : 'bg-orange-50 border-orange-200'}`}>
@@ -488,9 +492,9 @@ export default function Home() {
             </CardContent>
           </Card>
 
-          {/* Alert — 4th card, only when risk is elevated */}
+          {/* Alert — spans full right-panel width */}
           {riskScore >= 60 && (
-            <Alert className={`${getRiskBg(riskScore)} border-2 self-stretch`}>
+            <Alert className={`${getRiskBg(riskScore)} border-2 sm:col-span-2`}>
               <AlertTriangle className="h-5 w-5 text-red-600" />
               <AlertTitle className="font-bold text-red-900 text-sm">
                 {riskScore >= 80 ? '🔴 CRITICAL' : '🟠 HIGH'} ALERT
@@ -504,6 +508,8 @@ export default function Home() {
               </AlertDescription>
             </Alert>
           )}
+
+          </div>{/* end right panel */}
         </div>
 
         {/* 🚢 GULF MARITIME VESSEL TRACKING */}
