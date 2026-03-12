@@ -201,12 +201,27 @@ export default function Home() {
       </div>
 
       <div className="max-w-screen-2xl mx-auto px-4 py-6 space-y-5">
-        {/* Critical Alert Banner */}
+        {/* 🔴 P0: RISK SCORE HERO CARD */}
+        <Card className={`border-2 ${getRiskBg(riskScore)} h-48 flex items-center justify-center`}>
+          <CardContent className="p-8 text-center">
+            <p className="text-xs font-bold text-gray-500 uppercase mb-3 tracking-wide">LNG Supply Risk Score</p>
+            <div className="flex items-baseline justify-center gap-4">
+              <span className={`text-7xl font-bold ${getRiskColor(riskScore)}`}>{riskScore.toFixed(0)}</span>
+              <span className={`text-2xl font-semibold ${getRiskColor(riskScore)}`}>%</span>
+            </div>
+            <p className="text-sm text-gray-600 mt-3">
+              {riskScore >= 80 ? '🔴 CRITICAL — Immediate action required' : riskScore >= 60 ? '🟠 HIGH — Close monitoring' : riskScore >= 40 ? '🟡 MEDIUM — Caution advised' : '🟢 LOW — Stable conditions'}
+            </p>
+            <p className="text-xs text-gray-400 mt-1">Updated {new Date(supplyMetrics?.fetchedAt || Date.now()).toLocaleTimeString('en-IN', { hour12: false })}</p>
+          </CardContent>
+        </Card>
+
+        {/* Critical Alert Banner — Below Hero */}
         {riskScore >= 60 && (
           <Alert className={`${getRiskBg(riskScore)} border-2`}>
             <AlertTriangle className="h-5 w-5 text-red-600" />
             <AlertTitle className="font-bold text-red-900">
-              {riskScore >= 80 ? '🔴 CRITICAL' : '🟠 HIGH'} ALERT — LNG Supply Disruption Risk: {riskScore.toFixed(0)}%
+              {riskScore >= 80 ? '🔴 CRITICAL' : '🟠 HIGH'} ALERT — Why Risk is {riskScore >= 80 ? 'CRITICAL' : 'HIGH'}
             </AlertTitle>
             <AlertDescription className="text-red-800 mt-1 text-sm">
               India's LNG supply chain is under significant stress due to Middle East geopolitical tensions.
@@ -218,9 +233,10 @@ export default function Home() {
           </Alert>
         )}
 
-        {/* KPI Row */}
-        {/* JKM Asia LNG Spot Price — Dedicated KPI Card */}
-        <Card className={`border-2 ${jkmEstimated > 15 ? 'bg-red-50 border-red-300' : jkmEstimated > 12 ? 'bg-orange-50 border-orange-300' : 'bg-blue-50 border-blue-200'}`}>
+        {/* 🟠 P1: PRIMARY KPI ROW (3 cards) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* JKM Spot Price */}
+          <Card className={`border-2 ${jkmEstimated > 15 ? 'bg-red-50 border-red-300' : jkmEstimated > 12 ? 'bg-orange-50 border-orange-300' : 'bg-blue-50 border-blue-200'}`}>
           <CardContent className="p-4">
             <div className="flex items-start justify-between">
               <div className="flex-1">
@@ -279,20 +295,123 @@ export default function Home() {
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          {/* Reserve Days */}
+          <Card className={`border-2 ${avgReserveDays < 3 ? 'bg-red-50 border-red-300' : 'bg-orange-50 border-orange-200'}`}>
+            <CardContent className="p-4">
+              <div className="text-center">
+                <p className="text-xs font-bold text-gray-500 uppercase mb-2 tracking-wide">Reserve Days</p>
+                <div className="flex items-baseline justify-center gap-2">
+                  <span className={`text-4xl font-bold ${avgReserveDays < 3 ? 'text-red-600' : 'text-orange-600'}`}>
+                    {avgReserveDays.toFixed(1)}
+                  </span>
+                  <span className="text-sm text-gray-600">days</span>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  <strong>{totalReserve.toFixed(1)} MMTPA</strong> across 6 terminals
+                </p>
+                <p className="text-xs text-gray-400 mt-1">Crude oil buffer: 25 days</p>
+                <p className="text-xs text-blue-600 font-medium mt-2">Source: PNGRB</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Shipping Delay */}
+          <Card className={`border-2 ${shippingDelay > 6 ? 'bg-red-50 border-red-300' : shippingDelay > 4 ? 'bg-orange-50 border-orange-200' : 'bg-blue-50 border-blue-200'}`}>
+            <CardContent className="p-4">
+              <div className="text-center">
+                <p className="text-xs font-bold text-gray-500 uppercase mb-2 tracking-wide">Shipping Delay</p>
+                <div className="flex items-baseline justify-center gap-2">
+                  <span className={`text-4xl font-bold ${shippingDelay > 6 ? 'text-red-600' : shippingDelay > 4 ? 'text-orange-600' : 'text-blue-700'}`}>
+                    {shippingDelay.toFixed(1)}
+                  </span>
+                  <span className="text-sm text-gray-600">days</span>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  {shippingDelay > 6 ? 'Red Sea/Hormuz disruptions' : shippingDelay > 4 ? 'Elevated delays' : 'Normal operations'}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">Normal: 2 days</p>
+                <p className="text-xs text-blue-600 font-medium mt-2">Source: MarineTraffic AIS</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* 🟡 P2: ALWAYS-VISIBLE CONTEXT (Shipping Routes + Supplier Status) */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Shipping Route Status */}
+          <Card className="bg-white">
+            <CardHeader className="pb-2 border-b">
+              <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                <span>🚢 SHIPPING ROUTE STATUS</span>
+              </CardTitle>
+              <CardDescription className="text-xs">Real-time maritime intelligence · Strait of Hormuz, Red Sea, Suez</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-3 space-y-2">
+              {[
+                { route: 'Strait of Hormuz (Qatar→India)', status: supplyMetrics?.hormuzStatus ?? 'critical', emoji: '🔴' },
+                { route: 'Red Sea Route (Suez)', status: supplyMetrics?.redSeaStatus ?? 'elevated', emoji: '🟠' },
+                { route: 'Cape Route (Alternate)', status: 'open', emoji: '🟡' },
+                { route: 'Suez Canal (Egypt)', status: 'normal', emoji: '🟢' },
+              ].map((route, i) => (
+                <div key={i} className={`p-3 rounded border-l-4 ${route.status === 'critical' ? 'bg-red-50 border-red-300' : route.status === 'high' || route.status === 'elevated' ? 'bg-orange-50 border-orange-300' : route.status === 'medium' || route.status === 'open' ? 'bg-yellow-50 border-yellow-300' : 'bg-green-50 border-green-300'}`}>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="font-semibold text-sm text-gray-900">{route.route}</p>
+                      <p className={`text-xs font-medium mt-0.5 ${route.status === 'critical' ? 'text-red-700' : route.status === 'high' || route.status === 'elevated' ? 'text-orange-700' : route.status === 'medium' || route.status === 'open' ? 'text-yellow-700' : 'text-green-700'}`}>
+                        {route.status.toUpperCase()}
+                      </p>
+                    </div>
+                    <span className="text-lg">{route.emoji}</span>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          {/* Key Supplier Status */}
+          <Card className="bg-white">
+            <CardHeader className="pb-2 border-b">
+              <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                <span>🏭 KEY SUPPLIER STATUS</span>
+              </CardTitle>
+              <CardDescription className="text-xs">Qatar, UAE, Australia, and others · Supply availability</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-3 space-y-2">
+              {[
+                { supplier: 'Qatar (Ras Laffan)', capacity: '50%', status: 'operational', emoji: '🟢' },
+                { supplier: 'UAE (Das Is., Jebel Ali)', capacity: '20%', status: 'operational', emoji: '🟢' },
+                { supplier: 'Australia (Multiple Hubs)', capacity: '15%', status: 'operational', emoji: '🟢' },
+                { supplier: 'Others (Malaysia, Nigeria, US)', capacity: '15%', status: 'operational', emoji: '🟡' },
+              ].map((supplier, i) => (
+                <div key={i} className={`p-3 rounded border-l-4 ${supplier.status === 'critical' ? 'bg-red-50 border-red-300' : supplier.status === 'maintenance' ? 'bg-yellow-50 border-yellow-300' : 'bg-green-50 border-green-300'}`}>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="font-semibold text-sm text-gray-900">{supplier.supplier}</p>
+                      <p className={`text-xs font-medium mt-0.5 ${supplier.status === 'critical' ? 'text-red-700' : supplier.status === 'maintenance' ? 'text-yellow-700' : 'text-green-700'}`}>
+                        {supplier.status === 'operational' ? 'OPERATIONAL' : supplier.status.toUpperCase()}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-0.5">{supplier.capacity} of India's supply</p>
+                    </div>
+                    <span className="text-lg">{supplier.emoji}</span>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* 🟡 P3: SECONDARY KPI ROW (smaller visual weight) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {([
-            { label: 'RISK SCORE', value: `${riskScore.toFixed(0)}%`, sub: (supplyMetrics?.riskLevel ?? 'high').toUpperCase(), color: getRiskColor(riskScore), src: 'Composite Algorithm', srcTime: supplyMetrics?.fetchedAt, bg: getRiskBg(riskScore) },
             { label: 'LNG IMPORTS', value: `${lngImports.toFixed(1)}`, unit: 'MMTPA', change: importChange, src: 'PNGRB', srcTime: supplyMetrics?.fetchedAt },
             { label: 'LNG PRICE', value: `$${lngPrice.toFixed(2)}`, unit: '/MMBtu', change: priceChange, src: 'Yahoo Finance NG=F', srcTime: supplyMetrics?.fetchedAt },
-            { label: 'SHIP DELAY', value: `${shippingDelay.toFixed(1)}`, unit: 'days', sub: 'Normal: 2 days', src: 'MarineTraffic AIS', srcTime: supplyMetrics?.fetchedAt },
-            { label: 'RESERVE DAYS', value: `${avgReserveDays.toFixed(1)}`, unit: 'days', sub: 'Crude oil: 25 days', color: avgReserveDays < 3 ? 'text-red-600' : 'text-orange-600', src: 'PNGRB Terminals', srcTime: supplyMetrics?.fetchedAt },
             { label: 'HENRY HUB', value: `$${(ngFuture?.price ?? 3.067).toFixed(3)}`, unit: '/MMBtu', change: ngFuture?.changePercent, src: 'Yahoo Finance', srcTime: ngFuture?.fetchedAt },
           ] as any[]).map((kpi: any, i: number) => (
-            <Card key={i} className={`bg-white border hover:shadow-md transition-shadow ${kpi.bg ?? ''}`}>
+            <Card key={i} className={`bg-gray-50 border border-gray-200 hover:shadow-sm transition-shadow`}>
               <CardContent className="p-3">
                 <p className="text-xs font-semibold text-gray-500 mb-1">{kpi.label}</p>
                 <div className="flex items-baseline gap-1">
-                  <span className={`text-2xl font-bold ${kpi.color ?? 'text-gray-900'}`}>{kpi.value}</span>
+                  <span className={`text-xl font-bold text-gray-900`}>{kpi.value}</span>
                   {kpi.unit && <span className="text-xs text-gray-500">{kpi.unit}</span>}
                 </div>
                 {kpi.change !== undefined && kpi.change !== null && (
@@ -301,9 +420,8 @@ export default function Home() {
                     {Math.abs(kpi.change).toFixed(1)}%
                   </div>
                 )}
-                {kpi.sub && <p className="text-xs text-gray-500 mt-0.5">{kpi.sub}</p>}
-                <div className="mt-1.5 pt-1.5 border-t border-gray-100">
-                  <p className="text-xs text-blue-600 font-medium truncate">{kpi.src}</p>
+                <div className="mt-1.5 pt-1.5 border-t border-gray-200">
+                  <p className="text-xs text-gray-600 font-medium truncate">{kpi.src}</p>
                   {kpi.srcTime && <p className="text-xs text-gray-400">{new Date(kpi.srcTime).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false })}</p>}
                 </div>
               </CardContent>
