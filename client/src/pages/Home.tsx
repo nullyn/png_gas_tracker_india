@@ -172,7 +172,10 @@ export default function Home() {
   const selectedFuture = futures?.find(f => f.symbol === selectedSymbol);
   const terminalData = (terminals && terminals.length > 0 ? terminals : FALLBACK_TERMINALS) as any[];
   const totalReserve = terminalData.reduce((s: number, t: any) => s + (t.currentReserveMmtpa ?? 0), 0);
-  const avgReserveDays = terminalData.length ? terminalData.reduce((s: number, t: any) => s + (t.reserveDays ?? 0), 0) / terminalData.length : 2.5;
+  // Weighted Reserve Days = Total MMTPA in reserves / Daily consumption rate
+  // Assuming average daily consumption ~2.5 MMTPA for India
+  const dailyConsumptionMmtpa = supplyMetrics?.dailyConsumptionMmtpa ?? 2.5;
+  const weightedReserveDays = dailyConsumptionMmtpa > 0 ? totalReserve / dailyConsumptionMmtpa : 2.5;
   const ngFuture = futures?.find(f => f.symbol === 'NG=F');
   const ttfFuture = futures?.find(f => f.symbol === 'TTF=F');
   const lnggFuture = futures?.find(f => f.symbol === 'LNGG');
@@ -321,22 +324,22 @@ export default function Home() {
           </CardContent>
         </Card>
 
-          {/* Reserve Days */}
-          <Card className={`border-2 ${avgReserveDays < 3 ? 'bg-red-50 border-red-300' : 'bg-orange-50 border-orange-200'}`}>
+          {/* Reserve Days (Weighted) */}
+          <Card className={`border-2 ${weightedReserveDays < 3 ? 'bg-red-50 border-red-300' : 'bg-orange-50 border-orange-200'}`}>
             <CardContent className="p-4">
               <div className="text-center">
                 <div className="flex items-center justify-center gap-2 mb-2">
-                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Reserve Days</p>
+                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Weighted Reserve Days</p>
                   <LiveBadge time={terminalData[0]?.fetchedAt} />
                 </div>
                 <div className="flex items-baseline justify-center gap-2">
-                  <span className={`text-4xl font-bold ${avgReserveDays < 3 ? 'text-red-600' : 'text-orange-600'}`}>
-                    {avgReserveDays.toFixed(1)}
+                  <span className={`text-4xl font-bold ${weightedReserveDays < 3 ? 'text-red-600' : 'text-orange-600'}`}>
+                    {weightedReserveDays.toFixed(1)}
                   </span>
                   <span className="text-sm text-gray-600">days</span>
                 </div>
                 <p className="text-xs text-gray-500 mt-2">
-                  <strong>{totalReserve.toFixed(1)} MMTPA</strong> across 6 terminals
+                  <strong>{totalReserve.toFixed(1)} MMTPA</strong> total reserves ÷ <strong>{dailyConsumptionMmtpa.toFixed(1)}</strong> MMTPA/day
                 </p>
                 <p className="text-xs text-gray-400 mt-1">Crude oil buffer: 25 days</p>
                 <p className="text-xs text-blue-600 font-medium mt-2">Source: PNGRB</p>
@@ -447,9 +450,10 @@ export default function Home() {
                   {kpi.unit && <span className="text-xs text-gray-500">{kpi.unit}</span>}
                 </div>
                 {kpi.change !== undefined && kpi.change !== null && (
-                  <div className={`flex items-center gap-0.5 text-xs font-semibold mt-0.5 ${kpi.change < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                  <div className={`flex items-center gap-1 text-xs font-semibold mt-0.5 ${kpi.change < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                    <span className="text-sm">{kpi.change < 0 ? '🔴' : '🟢'}</span>
                     {kpi.change < 0 ? <TrendingDown className="w-3 h-3" /> : <TrendingUp className="w-3 h-3" />}
-                    {Math.abs(kpi.change).toFixed(1)}%
+                    <span>{kpi.change < 0 ? '−' : '+'}{Math.abs(kpi.change).toFixed(1)}%</span>
                   </div>
                 )}
                 <div className="mt-1.5 pt-1.5 border-t border-gray-200">
@@ -795,11 +799,11 @@ export default function Home() {
                   <p className="text-xs text-blue-600 mt-1">Source: PNGRB Terminal Reports</p>
                 </CardContent>
               </Card>
-              <Card className={`border-2 ${avgReserveDays < 3 ? 'bg-red-50 border-red-300' : 'bg-white border-orange-200'}`}>
+              <Card className={`border-2 ${weightedReserveDays < 3 ? 'bg-red-50 border-red-300' : 'bg-white border-orange-200'}`}>
                 <CardContent className="p-4 text-center">
-                  <p className="text-xs font-semibold text-gray-500 mb-1">AVG RESERVE DAYS</p>
-                  <p className={`text-3xl font-bold ${avgReserveDays < 3 ? 'text-red-600' : 'text-orange-600'}`}>{avgReserveDays.toFixed(1)}</p>
-                  <p className="text-xs text-gray-500">days of supply buffer</p>
+                  <p className="text-xs font-semibold text-gray-500 mb-1">WEIGHTED RESERVE DAYS</p>
+                  <p className={`text-3xl font-bold ${weightedReserveDays < 3 ? 'text-red-600' : 'text-orange-600'}`}>{weightedReserveDays.toFixed(1)}</p>
+                  <p className="text-xs text-gray-500">aggregate supply buffer</p>
                   <p className="text-xs text-gray-500 mt-1">Crude oil equivalent: 25 days</p>
                 </CardContent>
               </Card>
@@ -887,7 +891,7 @@ export default function Home() {
                     <AlertCircle className="w-4 h-4 text-red-600" />
                     <div>
                       <CardTitle className="text-sm font-semibold text-gray-700">SYSTEM ALERTS</CardTitle>
-                      <CardDescription className="text-xs">Auto-generated · Source: Composite Risk Algorithm · Manus Notifications</CardDescription>
+                      <CardDescription className="text-xs">Auto-generated · Source: Composite Risk Algorithm</CardDescription>
                     </div>
                   </div>
                 </CardHeader>
