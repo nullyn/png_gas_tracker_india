@@ -256,7 +256,7 @@ export default function Home() {
               India's LNG supply chain is under significant stress due to Middle East geopolitical tensions.
               Strait of Hormuz: <strong>{supplyMetrics?.hormuzStatus?.toUpperCase() ?? 'CRITICAL'}</strong> ·
               Red Sea: <strong>{supplyMetrics?.redSeaStatus?.toUpperCase() ?? 'ELEVATED'}</strong> ·
-              Reserve buffer: <strong>{avgReserveDays.toFixed(1)} days</strong> (vs 25 days for crude oil).
+              Reserve buffer: <strong>{weightedReserveDays.toFixed(1)} days</strong> (vs 25 days for crude oil).
               {riskScore >= 80 && ' Immediate contingency planning recommended.'}
             </AlertDescription>
           </Alert>
