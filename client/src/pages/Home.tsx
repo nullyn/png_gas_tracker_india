@@ -127,20 +127,15 @@ export default function Home() {
   const [isInitialLoading, setIsInitialLoading] = useState(false);
   const [dataLastFetched, setDataLastFetched] = useState<Date | null>(null);
 
-  // Check if data needs refresh (older than 30 minutes)
-  const needsRefresh = () => {
-    const cachedTime = getCacheAge(CACHE_KEYS.SUPPLY_METRICS);
-    if (!cachedTime) return true; // No cache, needs refresh
-    return cachedTime > 1800; // 30 minutes in seconds
-  };
 
-  const { data: supplyMetrics } = trpc.dashboard.latestSupplyMetrics.useQuery(undefined, { enabled: needsRefresh() });
-  const { data: metricsHistory } = trpc.dashboard.supplyMetricsHistory.useQuery(undefined, { enabled: needsRefresh() });
-  const { data: futures } = trpc.dashboard.latestFutures.useQuery(undefined, { enabled: needsRefresh() });
-  const { data: terminals } = trpc.dashboard.terminalReserves.useQuery(undefined, { enabled: needsRefresh() });
-  const { data: activeAlerts } = trpc.dashboard.activeAlerts.useQuery(undefined, { enabled: needsRefresh() });
-  const { data: geoEvents } = trpc.dashboard.geopoliticalEvents.useQuery(undefined, { enabled: needsRefresh() });
-  const { data: chartHistory } = trpc.dashboard.priceHistory.useQuery({ symbol: selectedSymbol, days: 30 }, { enabled: needsRefresh() });
+
+  const { data: supplyMetrics } = trpc.dashboard.latestSupplyMetrics.useQuery(undefined, { staleTime: 30 * 60 * 1000, gcTime: 60 * 60 * 1000 });
+  const { data: metricsHistory } = trpc.dashboard.supplyMetricsHistory.useQuery(undefined, { staleTime: 30 * 60 * 1000, gcTime: 60 * 60 * 1000 });
+  const { data: futures } = trpc.dashboard.latestFutures.useQuery(undefined, { staleTime: 30 * 60 * 1000, gcTime: 60 * 60 * 1000 });
+  const { data: terminals } = trpc.dashboard.terminalReserves.useQuery(undefined, { staleTime: 30 * 60 * 1000, gcTime: 60 * 60 * 1000 });
+  const { data: activeAlerts } = trpc.dashboard.activeAlerts.useQuery(undefined, { staleTime: 30 * 60 * 1000, gcTime: 60 * 60 * 1000 });
+  const { data: geoEvents } = trpc.dashboard.geopoliticalEvents.useQuery(undefined, { staleTime: 30 * 60 * 1000, gcTime: 60 * 60 * 1000 });
+  const { data: chartHistory } = trpc.dashboard.priceHistory.useQuery({ symbol: selectedSymbol, days: 30 }, { staleTime: 30 * 60 * 1000, gcTime: 60 * 60 * 1000 });
 
   const _cachedVessels = getCachedData<any>(CACHE_KEYS.VESSELS, 60 * 60 * 1000);
   // Poll every 5 minutes — cheap read from server's in-memory map (persistent WS accumulates vessels)
@@ -223,10 +218,10 @@ export default function Home() {
     const cachedGeo = getCachedData(CACHE_KEYS.GEO_EVENTS);
     const cachedPrice = getCachedData(CACHE_KEYS.PRICE_HISTORY);
 
-    // If no cached data at all, show loading overlay
-    if (!cachedSupply && needsRefresh()) {
+    // Show loading only if we have no cached data
+    if (!cachedSupply) {
       setIsInitialLoading(true);
-    } else if (cachedSupply) {
+    } else {
       setIsInitialLoading(false);
     }
 
