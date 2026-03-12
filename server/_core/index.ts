@@ -53,12 +53,42 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
   throw new Error(`No available port found starting from ${startPort}`);
 }
 
+// ─── Keep-Alive Self-Ping (prevents Railway container sleep) ─────────────────
+// Railway sleeps containers that receive no external traffic.
+// We self-ping our own /health endpoint every 4 min via our public URL,
+// which creates a real round-trip through Railway's proxy — counted as activity.
+function startKeepAlive() {
+  const domain = process.env.RAILWAY_PUBLIC_DOMAIN;
+  if (!domain) {
+    console.log("[KeepAlive] RAILWAY_PUBLIC_DOMAIN not set — skipping (local dev)");
+    return;
+  }
+  const url = `https://${domain}/health`;
+  const INTERVAL_MS = 4 * 60 * 1000; // 4 minutes (Railway sleep threshold is ~5 min)
+  console.log(`[KeepAlive] Self-ping active → ${url} every 4 min`);
+  setInterval(async () => {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) console.warn(`[KeepAlive] Ping returned ${res.status}`);
+    } catch (err: any) {
+      console.warn("[KeepAlive] Ping failed:", err?.message ?? err);
+    }
+  }, INTERVAL_MS);
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 async function startServer() {
   const app = express();
   const server = createServer(app);
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
+
+  // Health check endpoint (used by Railway and the keep-alive self-ping)
+  app.get("/health", (_req, res) => {
+    res.json({ status: "ok", uptime: Math.floor(process.uptime()) });
+  });
+
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
   // Chat API with streaming and tool calling
@@ -80,6 +110,8 @@ async function startServer() {
     startScheduler();
     // Open persistent AISStream WebSocket connection
     initVesselTracking();
+    // Keep Railway container alive with periodic self-ping
+    startKeepAlive();
   });
 }
 

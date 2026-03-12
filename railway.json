@@ -6,6 +6,8 @@
   },
   "deploy": {
     "startCommand": "pnpm drizzle-kit migrate && pnpm start",
+    "healthcheckPath": "/health",
+    "healthcheckTimeout": 30,
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 5
   }
