@@ -4,6 +4,7 @@ import { AlertCircle, TrendingDown, TrendingUp, Flame, AlertTriangle, Clock, Ext
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
 import { getCachedData, setCachedData, isDataStale, getCacheAge, CACHE_KEYS, CACHE_DURATION } from '@/lib/cache';
