@@ -902,6 +902,17 @@ export default function Home() {
           {/* Futures & Technicals Tab */}
           <TabsContent value="futures" className="space-y-4 mt-4">
             <h2 className="sr-only">LNG Futures and Technical Analysis — Henry Hub, TTF, Brent, India Gas Stocks</h2>
+            {(!futures || futures.length === 0) && (
+              <Alert className="bg-amber-50 border-amber-300">
+                <AlertTriangle className="h-4 w-4 text-amber-600" />
+                <AlertTitle className="text-amber-900 font-semibold text-sm">Live data unavailable</AlertTitle>
+                <AlertDescription className="text-amber-800 text-xs mt-1">
+                  Yahoo Finance is not reachable right now — this is typically a transient network issue on the server.
+                  The data below will appear automatically once the next scheduled fetch succeeds (every 5 minutes).
+                  Cached values from the last successful fetch are shown where available.
+                </AlertDescription>
+              </Alert>
+            )}
             {Object.entries(CATEGORY_LABELS).map(([cat, label]) => {
               const items = futuresByCategory[cat] ?? [];
               if (items.length === 0) return null;

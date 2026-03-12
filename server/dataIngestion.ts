@@ -5,13 +5,22 @@
  */
 
 import dns from "node:dns";
+import { setGlobalDispatcher, Agent } from "undici";
 import { getDb } from "./db";
 import { futuresData, priceHistory, supplyMetrics, terminalReserves, alerts, geopoliticalEvents } from "../drizzle/schema";
 import { desc, eq, and, gte } from "drizzle-orm";
 import { notifyOwner } from "./_core/notification";
 
-// Force IPv4 DNS resolution — Yahoo Finance blocks IPv6 from cloud IPs
+// Force IPv4 for ALL outbound fetch connections (undici socket level).
+// dns.setDefaultResultOrder only affects DNS lookup preference; Railway still
+// dials IPv6 via undici. setGlobalDispatcher with family:4 forces TCP over IPv4.
 dns.setDefaultResultOrder("ipv4first");
+try {
+  setGlobalDispatcher(new Agent({ connect: { family: 4 } }));
+  console.log("[DataIngestion] Global undici dispatcher set to IPv4-only");
+} catch (e) {
+  console.warn("[DataIngestion] Could not set undici IPv4 dispatcher:", e);
+}
 
 // ─── Instrument Definitions ───────────────────────────────────────────────────
 export const INSTRUMENTS = [
@@ -133,14 +142,31 @@ export async function fetchAndStoreFuturesData(): Promise<void> {
   for (const instrument of INSTRUMENTS) {
     try {
       const yahooUrl = `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(instrument.symbol)}?region=US&interval=1d&range=3mo`;
-      const yahooResp = await fetch(yahooUrl, {
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-          "Accept": "application/json",
-        },
-      });
+      // 8-second timeout per request — prevents 30s TCP hang per symbol on Railway
+      const controller = new AbortController();
+      const fetchTimeout = setTimeout(() => controller.abort(), 8000);
+      let yahooResp: Response;
+      try {
+        yahooResp = await fetch(yahooUrl, {
+          signal: controller.signal,
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "application/json",
+            "Accept-Language": "en-US,en;q=0.9",
+          },
+        });
+      } catch (fetchErr: any) {
+        clearTimeout(fetchTimeout);
+        if (fetchErr?.name === "AbortError") {
+          console.warn(`[DataIngestion] Timeout (8s) fetching ${instrument.symbol} — using cached DB value`);
+        } else {
+          console.error(`[DataIngestion] Error fetching ${instrument.symbol}:`, fetchErr);
+        }
+        continue;
+      }
+      clearTimeout(fetchTimeout);
       // Small delay between requests to avoid rate limiting
-      await new Promise(r => setTimeout(r, 1000));
+      await new Promise(r => setTimeout(r, 400));
 
       if (!yahooResp.ok) {
         console.warn(`[DataIngestion] Yahoo Finance returned ${yahooResp.status} for ${instrument.symbol}`);
@@ -213,7 +239,7 @@ export async function fetchAndStoreFuturesData(): Promise<void> {
 
       console.log(`[DataIngestion] Stored ${instrument.symbol}: ${currentPrice} ${instrument.currency} | RSI: ${rsi?.toFixed(1)} | Signal: ${techSignal}`);
     } catch (err) {
-      console.error(`[DataIngestion] Error fetching ${instrument.symbol}:`, err);
+      console.error(`[DataIngestion] Unexpected error for ${instrument.symbol}:`, err);
     }
   }
 }
