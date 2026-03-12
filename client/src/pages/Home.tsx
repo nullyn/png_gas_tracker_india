@@ -120,37 +120,6 @@ const REGION_LABELS: Record<string, string> = {
 };
 
 
-const FALLBACK_VESSEL_DATA = {
-  vessels: [
-    { mmsi: '538005682', name: 'BW PAVILION LEEARA',  type: 80, lat: 25.9, lon: 52.3, speed: 13.8, heading: 295, navstat: 0, destination: 'DAHEJ INDIA',      flag: '🇸🇬', region: 'persian_gulf', isLngCandidate: true  },
-    { mmsi: '354784000', name: 'AL HUWAILA',          type: 80, lat: 26.2, lon: 53.1, speed: 12.1, heading: 310, navstat: 0, destination: 'KOCHI INDIA',      flag: '🇶🇦', region: 'persian_gulf', isLngCandidate: true  },
-    { mmsi: '370791000', name: 'AL SHEEHANIYA',       type: 80, lat: 25.4, lon: 50.8, speed: 0.1,  heading: 180, navstat: 1, destination: 'RAS LAFFAN',       flag: '🇶🇦', region: 'persian_gulf', isLngCandidate: true  },
-    { mmsi: '563024400', name: 'GASLOG SKAGEN',       type: 80, lat: 26.1, lon: 49.5, speed: 14.2, heading: 135, navstat: 0, destination: 'BAHRAIN',          flag: '🇸🇬', region: 'persian_gulf', isLngCandidate: true  },
-    { mmsi: '636016818', name: 'TRITON VOYAGER',      type: 80, lat: 25.8, lon: 54.7, speed: 11.5, heading: 107, navstat: 0, destination: 'HORMUZ/INDIA',     flag: '🇲🇭', region: 'persian_gulf', isLngCandidate: true  },
-    { mmsi: '477294100', name: 'PACIFIC INEOS',       type: 80, lat: 26.4, lon: 55.0, speed: 9.8,  heading: 120, navstat: 0, destination: 'DAHEJ INDIA',      flag: '🇭🇰', region: 'persian_gulf', isLngCandidate: false },
-    { mmsi: '470102000', name: 'MARAN GAS MYSTRAS',   type: 80, lat: 25.7, lon: 51.5, speed: 0.2,  heading: 240, navstat: 1, destination: 'RAS LAFFAN',       flag: '🇦🇪', region: 'persian_gulf', isLngCandidate: true  },
-    { mmsi: '457024300', name: 'MOZAH',               type: 80, lat: 26.3, lon: 56.4, speed: 13.5, heading: 105, navstat: 0, destination: 'DAHEJ INDIA',      flag: '🇶🇦', region: 'hormuz',       isLngCandidate: true  },
-    { mmsi: '370809000', name: 'AL ZUBARAH',          type: 80, lat: 26.0, lon: 56.8, speed: 14.0, heading: 98,  navstat: 0, destination: 'MUNDRA INDIA',     flag: '🇶🇦', region: 'hormuz',       isLngCandidate: true  },
-    { mmsi: '538006437', name: 'FLEX CONSTELLATION',  type: 80, lat: 26.1, lon: 56.2, speed: 0.3,  heading: 45,  navstat: 5, destination: 'AWAITING ORDERS',  flag: '🇸🇬', region: 'hormuz',       isLngCandidate: true  },
-    { mmsi: '236118000', name: 'ENERGY EMPRESS',      type: 80, lat: 25.9, lon: 56.9, speed: 13.2, heading: 115, navstat: 0, destination: 'HAZIRA INDIA',     flag: '🇬🇧', region: 'hormuz',       isLngCandidate: true  },
-    { mmsi: '636017845', name: 'GAS AGILITY',         type: 80, lat: 25.7, lon: 57.1, speed: 12.9, heading: 285, navstat: 0, destination: 'MUSCAT/ANCHOR',    flag: '🇲🇭', region: 'hormuz',       isLngCandidate: false },
-    { mmsi: '563076700', name: 'BW MAGNOLIA',         type: 80, lat: 23.8, lon: 59.2, speed: 14.5, heading: 72,  navstat: 0, destination: 'DAHEJ INDIA',      flag: '🇸🇬', region: 'gulf_of_oman', isLngCandidate: true  },
-    { mmsi: '636091234', name: 'ENERGY HORIZON',      type: 80, lat: 23.1, lon: 60.8, speed: 13.1, heading: 68,  navstat: 0, destination: 'KOCHI INDIA',      flag: '🇲🇭', region: 'gulf_of_oman', isLngCandidate: true  },
-    { mmsi: '304010417', name: 'PACIFIC BREEZE',      type: 80, lat: 20.5, lon: 38.2, speed: 14.8, heading: 345, navstat: 0, destination: 'SUEZ CANAL',        flag: '🇦🇬', region: 'red_sea',      isLngCandidate: false },
-    { mmsi: '548543000', name: 'LNG RIVERS',          type: 80, lat: 17.3, lon: 40.1, speed: 11.2, heading: 155, navstat: 0, destination: 'ADEN/CAPE ROUTE',   flag: '🇵🇭', region: 'red_sea',      isLngCandidate: true  },
-    { mmsi: '636017012', name: 'SERI BEGAWAN',        type: 80, lat: 14.8, lon: 42.7, speed: 8.5,  heading: 190, navstat: 0, destination: 'ADEN REROUTE',      flag: '🇲🇭', region: 'red_sea',      isLngCandidate: true  },
-    { mmsi: '255803930', name: 'GASLOG SALEM',        type: 80, lat: 22.1, lon: 37.4, speed: 15.1, heading: 340, navstat: 0, destination: 'SUEZ NORTH',        flag: '🇵🇹', region: 'red_sea',      isLngCandidate: true  },
-  ],
-  counts: {
-    persianGulf: { total: 7, tankers: 7, underway: 5 },
-    hormuz:      { total: 5, tankers: 5, underway: 4 },
-    gulfOfOman:  { total: 2, tankers: 2, underway: 2 },
-    redSea:      { total: 4, tankers: 4, underway: 4 },
-  },
-  fetchedAt: new Date().toISOString(),
-  isLive: false,
-  source: 'Demo data — set AISSTREAM_API_KEY env var (free at aisstream.io)',
-};
 
 export default function Home() {
   const [selectedSymbol, setSelectedSymbol] = useState('NG=F');
@@ -173,14 +142,24 @@ export default function Home() {
   const { data: geoEvents } = trpc.dashboard.geopoliticalEvents.useQuery(undefined, { enabled: needsRefresh() });
   const { data: chartHistory } = trpc.dashboard.priceHistory.useQuery({ symbol: selectedSymbol, days: 30 }, { enabled: needsRefresh() });
 
-  const vesselCacheAge = getCacheAge(CACHE_KEYS.VESSELS);
   const _cachedVessels = getCachedData<any>(CACHE_KEYS.VESSELS, 60 * 60 * 1000);
-  // Re-fetch if: no cache, stale (>1hr), OR cached data is demo (isLive=false — means
-  // API key was absent/invalid last time; should retry now that it may be set).
+  // Poll every 5 minutes — cheap read from server's in-memory map (persistent WS accumulates vessels)
   const { data: vesselSnapshotRaw } = trpc.dashboard.vesselSnapshot.useQuery(undefined, {
-    enabled: vesselCacheAge === null || vesselCacheAge > 3600 || _cachedVessels?.isLive === false,
+    refetchInterval: 5 * 60 * 1000,
   });
-  const [vesselData, setVesselData] = useState<any>(() => _cachedVessels ?? FALLBACK_VESSEL_DATA);
+  const EMPTY_VESSEL_DATA = {
+    vessels: [] as any[],
+    counts: {
+      persianGulf: { total: 0, tankers: 0, underway: 0 },
+      hormuz:      { total: 0, tankers: 0, underway: 0 },
+      gulfOfOman:  { total: 0, tankers: 0, underway: 0 },
+      redSea:      { total: 0, tankers: 0, underway: 0 },
+    },
+    fetchedAt: null as string | null,
+    isLive: false,
+    source: 'Connecting to AISStream…',
+  };
+  const [vesselData, setVesselData] = useState<any>(() => _cachedVessels ?? EMPTY_VESSEL_DATA);
 
   // Cache data when it arrives from API
   useEffect(() => {
@@ -522,8 +501,8 @@ export default function Home() {
                 <CardTitle className="text-sm font-semibold text-gray-700">🚢 GULF MARITIME VESSEL TRACKING — LIVE AIS SNAPSHOT</CardTitle>
                 <CardDescription className="text-xs">
                   Persian Gulf · Strait of Hormuz · Red Sea · LNG tankers &amp; shipping traffic · Refreshes every 1 hr
-                  {!vesselData.isLive && (
-                    <span className="ml-2 text-amber-600 font-medium">⚠ Demo data — set AISSTREAM_API_KEY for live AIS</span>
+                {vesselData.source?.includes('AISSTREAM_API_KEY') && (
+                    <span className="ml-2 text-amber-600 font-medium">⚠ No API key — set AISSTREAM_API_KEY for live AIS</span>
                   )}
                 </CardDescription>
               </div>

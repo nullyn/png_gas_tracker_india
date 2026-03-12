@@ -9,6 +9,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic } from "./static";
 import { runFullDataRefresh, backfillSupplyMetricsHistory } from "../dataIngestion";
+import { initVesselTracking } from "../routers";
 
 // ─── Data Refresh Scheduler ───────────────────────────────────────────────────
 const REFRESH_INTERVAL_MS = 60 * 60 * 1000; // every 1 hour
@@ -77,6 +78,8 @@ async function startServer() {
     console.log(`Server running on http://localhost:${port}/`);
     // Start the data refresh scheduler after server is up
     startScheduler();
+    // Open persistent AISStream WebSocket connection
+    initVesselTracking();
   });
 }
 
