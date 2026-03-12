@@ -79,7 +79,7 @@ export default function Home() {
   const { data: terminals } = trpc.dashboard.terminalReserves.useQuery(undefined, { refetchInterval: 300_000 });
   const { data: activeAlerts } = trpc.dashboard.activeAlerts.useQuery(undefined, { refetchInterval: 60_000 });
   const { data: geoEvents } = trpc.dashboard.geopoliticalEvents.useQuery(undefined, { refetchInterval: 300_000 });
-  const { data: chartHistory } = trpc.dashboard.priceHistory.useQuery({ symbol: selectedSymbol, days: 90 }, { refetchInterval: 300_000 });
+  const { data: chartHistory } = trpc.dashboard.priceHistory.useQuery({ symbol: selectedSymbol, days: 30 }, { refetchInterval: 300_000 });
 
   const refreshMutation = trpc.dashboard.refresh.useMutation({
     onSuccess: () => {
@@ -115,12 +115,12 @@ export default function Home() {
 
   const trendChartData = useMemo(() => {
     if (!metricsHistory || metricsHistory.length === 0) {
-      return Array.from({ length: 10 }, (_, i) => ({
-        date: `Mar ${i + 1}`, imports: 45 - i * 2, price: 8.5 + i * 0.6, risk: 35 + i * 6,
+      return Array.from({ length: 30 }, (_, i) => ({
+        date: `Day ${i + 1}`, imports: 45 - i * 0.5, price: 8.5 + i * 0.3, risk: 35 + i * 1.5,
       }));
     }
     return [...metricsHistory].reverse().map(m => ({
-      date: new Date(m.timestamp).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }),
+      date: new Date(m.timestamp).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: '2-digit' }),
       imports: m.lngImportsMmtpa ? +m.lngImportsMmtpa.toFixed(1) : null,
       price: m.lngPriceUsd ? +m.lngPriceUsd.toFixed(2) : null,
       risk: m.riskScore ? +m.riskScore.toFixed(0) : null,
@@ -130,7 +130,7 @@ export default function Home() {
   const priceChartData = useMemo(() => {
     if (!chartHistory || chartHistory.length === 0) return [];
     return chartHistory.map(h => ({
-      date: new Date(h.date).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }),
+      date: new Date(h.date).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: '2-digit' }),
       close: h.close ? +h.close.toFixed(3) : null,
       volume: h.volume,
     }));

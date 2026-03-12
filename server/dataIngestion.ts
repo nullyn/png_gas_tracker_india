@@ -31,6 +31,7 @@ export const INSTRUMENTS = [
   { symbol: "GSPL.NS",      name: "Gujarat State Petronet Ltd",         category: "india_gas_stock" as const, currency: "INR", unit: "INR" },
   { symbol: "ONGC.NS",      name: "ONGC Ltd",                           category: "india_gas_stock" as const, currency: "INR", unit: "INR" },
   { symbol: "IOC.NS",       name: "Indian Oil Corporation",             category: "india_gas_stock" as const, currency: "INR", unit: "INR" },
+  { symbol: "TORNTPOWER.NS", name: "Torrent Power Ltd (Torrent Gas Proxy)", category: "india_gas_stock" as const, currency: "INR", unit: "INR" },
   // JKM Proxies (Asia LNG spot price)
   { symbol: "LNGG",         name: "Roundhill Alerian LNG ETF (JKM Proxy)", category: "lng_benchmark" as const, currency: "USD", unit: "USD" },
   { symbol: "GLNG",         name: "Golar LNG (Asia-Pacific LNG Shipping)",  category: "lng_benchmark" as const, currency: "USD", unit: "USD" },
