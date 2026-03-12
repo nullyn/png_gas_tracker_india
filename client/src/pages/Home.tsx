@@ -96,6 +96,69 @@ const FALLBACK_GOOGLE_TRENDS = [
   { day: 'Mar 15', value: 88 },
 ];
 
+// ─── Vessel Tracking Helpers ─────────────────────────────────────────────────────────────────────────
+const MMSI_FLAGS: Record<string, string> = {
+  '232': '🇬🇧', '233': '🇬🇧', '234': '🇬🇧', '235': '🇬🇧', '236': '🇬🇧',
+  '248': '🇲🇹', '249': '🇲🇹', '255': '🇵🇹', '256': '🇲🇹',
+  '304': '🇦🇬', '305': '🇦🇬',
+  '352': '🇵🇦', '353': '🇵🇦', '354': '🇵🇦', '370': '🇵🇦', '371': '🇵🇦', '372': '🇵🇦', '373': '🇵🇦', '374': '🇵🇦',
+  '416': '🇨🇾', '419': '🇮🇳', '422': '🇮🇷',
+  '440': '🇰🇷', '441': '🇰🇷', '466': '🇶🇦', '470': '🇦🇪', '477': '🇭🇰',
+  '503': '🇦🇺', '525': '🇮🇩', '538': '🇲🇭',
+  '548': '🇵🇭', '563': '🇸🇬', '566': '🇸🇬',
+  '620': '🇲🇿', '636': '🇱🇷', '657': '🇳🇬',
+};
+const mmsiToFlag = (mmsi: string): string =>
+  MMSI_FLAGS[mmsi.substring(0, 3)] ?? MMSI_FLAGS[mmsi.substring(0, 2)] ?? '';
+
+const REGION_LABELS: Record<string, string> = {
+  persian_gulf: 'Persian Gulf', hormuz: '⚠ Hormuz',
+  gulf_of_oman: 'Gulf of Oman', arabian_sea: 'Arabian Sea', red_sea: '⚠ Red Sea',
+};
+
+const getVesselSvgPos = (lon: number, region: string, mmsi: string): { x: number; y: number } => {
+  const code = mmsi.split('').reduce((s, c) => s + c.charCodeAt(0), 0);
+  const jitter = (base: number) => base + ((code % 22) - 11);
+  const clamp = (v: number) => Math.min(1, Math.max(0, v));
+  if (region === 'red_sea')      return { x: 80  + clamp((lon - 32)   / 12)  * 290, y: jitter(174) };
+  if (region === 'persian_gulf') return { x: 80  + clamp((lon - 48)   / 7.5) * 330, y: jitter(87)  };
+  if (region === 'hormuz')       return { x: 410 + clamp((lon - 55.5) / 2)   * 62,  y: jitter(87)  };
+  if (region === 'gulf_of_oman') return { x: 472 + clamp((lon - 57.5) / 4.5) * 238, y: jitter(87)  };
+  return { x: 710 + clamp((lon - 62) / 11) * 218, y: jitter(87) };
+};
+
+const FALLBACK_VESSEL_DATA = {
+  vessels: [
+    { mmsi: '538005682', name: 'BW PAVILION LEEARA',  type: 80, lat: 25.9, lon: 52.3, speed: 13.8, heading: 295, navstat: 0, destination: 'DAHEJ INDIA',      flag: '🇸🇬', region: 'persian_gulf', isLngCandidate: true  },
+    { mmsi: '354784000', name: 'AL HUWAILA',          type: 80, lat: 26.2, lon: 53.1, speed: 12.1, heading: 310, navstat: 0, destination: 'KOCHI INDIA',      flag: '🇶🇦', region: 'persian_gulf', isLngCandidate: true  },
+    { mmsi: '370791000', name: 'AL SHEEHANIYA',       type: 80, lat: 25.4, lon: 50.8, speed: 0.1,  heading: 180, navstat: 1, destination: 'RAS LAFFAN',       flag: '🇶🇦', region: 'persian_gulf', isLngCandidate: true  },
+    { mmsi: '563024400', name: 'GASLOG SKAGEN',       type: 80, lat: 26.1, lon: 49.5, speed: 14.2, heading: 135, navstat: 0, destination: 'BAHRAIN',          flag: '🇸🇬', region: 'persian_gulf', isLngCandidate: true  },
+    { mmsi: '636016818', name: 'TRITON VOYAGER',      type: 80, lat: 25.8, lon: 54.7, speed: 11.5, heading: 107, navstat: 0, destination: 'HORMUZ/INDIA',     flag: '🇲🇭', region: 'persian_gulf', isLngCandidate: true  },
+    { mmsi: '477294100', name: 'PACIFIC INEOS',       type: 80, lat: 26.4, lon: 55.0, speed: 9.8,  heading: 120, navstat: 0, destination: 'DAHEJ INDIA',      flag: '🇭🇰', region: 'persian_gulf', isLngCandidate: false },
+    { mmsi: '470102000', name: 'MARAN GAS MYSTRAS',   type: 80, lat: 25.7, lon: 51.5, speed: 0.2,  heading: 240, navstat: 1, destination: 'RAS LAFFAN',       flag: '🇦🇪', region: 'persian_gulf', isLngCandidate: true  },
+    { mmsi: '457024300', name: 'MOZAH',               type: 80, lat: 26.3, lon: 56.4, speed: 13.5, heading: 105, navstat: 0, destination: 'DAHEJ INDIA',      flag: '🇶🇦', region: 'hormuz',       isLngCandidate: true  },
+    { mmsi: '370809000', name: 'AL ZUBARAH',          type: 80, lat: 26.0, lon: 56.8, speed: 14.0, heading: 98,  navstat: 0, destination: 'MUNDRA INDIA',     flag: '🇶🇦', region: 'hormuz',       isLngCandidate: true  },
+    { mmsi: '538006437', name: 'FLEX CONSTELLATION',  type: 80, lat: 26.1, lon: 56.2, speed: 0.3,  heading: 45,  navstat: 5, destination: 'AWAITING ORDERS',  flag: '🇸🇬', region: 'hormuz',       isLngCandidate: true  },
+    { mmsi: '236118000', name: 'ENERGY EMPRESS',      type: 80, lat: 25.9, lon: 56.9, speed: 13.2, heading: 115, navstat: 0, destination: 'HAZIRA INDIA',     flag: '🇬🇧', region: 'hormuz',       isLngCandidate: true  },
+    { mmsi: '636017845', name: 'GAS AGILITY',         type: 80, lat: 25.7, lon: 57.1, speed: 12.9, heading: 285, navstat: 0, destination: 'MUSCAT/ANCHOR',    flag: '🇲🇭', region: 'hormuz',       isLngCandidate: false },
+    { mmsi: '563076700', name: 'BW MAGNOLIA',         type: 80, lat: 23.8, lon: 59.2, speed: 14.5, heading: 72,  navstat: 0, destination: 'DAHEJ INDIA',      flag: '🇸🇬', region: 'gulf_of_oman', isLngCandidate: true  },
+    { mmsi: '636091234', name: 'ENERGY HORIZON',      type: 80, lat: 23.1, lon: 60.8, speed: 13.1, heading: 68,  navstat: 0, destination: 'KOCHI INDIA',      flag: '🇲🇭', region: 'gulf_of_oman', isLngCandidate: true  },
+    { mmsi: '304010417', name: 'PACIFIC BREEZE',      type: 80, lat: 20.5, lon: 38.2, speed: 14.8, heading: 345, navstat: 0, destination: 'SUEZ CANAL',        flag: '🇦🇬', region: 'red_sea',      isLngCandidate: false },
+    { mmsi: '548543000', name: 'LNG RIVERS',          type: 80, lat: 17.3, lon: 40.1, speed: 11.2, heading: 155, navstat: 0, destination: 'ADEN/CAPE ROUTE',   flag: '🇵🇭', region: 'red_sea',      isLngCandidate: true  },
+    { mmsi: '636017012', name: 'SERI BEGAWAN',        type: 80, lat: 14.8, lon: 42.7, speed: 8.5,  heading: 190, navstat: 0, destination: 'ADEN REROUTE',      flag: '🇲🇭', region: 'red_sea',      isLngCandidate: true  },
+    { mmsi: '255803930', name: 'GASLOG SALEM',        type: 80, lat: 22.1, lon: 37.4, speed: 15.1, heading: 340, navstat: 0, destination: 'SUEZ NORTH',        flag: '🇵🇹', region: 'red_sea',      isLngCandidate: true  },
+  ],
+  counts: {
+    persianGulf: { total: 7, tankers: 7, underway: 5 },
+    hormuz:      { total: 5, tankers: 5, underway: 4 },
+    gulfOfOman:  { total: 2, tankers: 2, underway: 2 },
+    redSea:      { total: 4, tankers: 4, underway: 4 },
+  },
+  fetchedAt: new Date().toISOString(),
+  isLive: false,
+  source: 'Demo data — set AISHUB_USERNAME env var (free at aishub.net)',
+};
+
 export default function Home() {
   const [selectedSymbol, setSelectedSymbol] = useState('NG=F');
   const [activeTab, setActiveTab] = useState('overview');
@@ -116,6 +179,14 @@ export default function Home() {
   const { data: activeAlerts } = trpc.dashboard.activeAlerts.useQuery(undefined, { enabled: needsRefresh() });
   const { data: geoEvents } = trpc.dashboard.geopoliticalEvents.useQuery(undefined, { enabled: needsRefresh() });
   const { data: chartHistory } = trpc.dashboard.priceHistory.useQuery({ symbol: selectedSymbol, days: 30 }, { enabled: needsRefresh() });
+
+  const vesselCacheAge = getCacheAge(CACHE_KEYS.VESSELS);
+  const { data: vesselSnapshotRaw } = trpc.dashboard.vesselSnapshot.useQuery(undefined, {
+    enabled: vesselCacheAge === null || vesselCacheAge > 3600,
+  });
+  const [vesselData, setVesselData] = useState<any>(
+    () => getCachedData(CACHE_KEYS.VESSELS, 60 * 60 * 1000) ?? FALLBACK_VESSEL_DATA
+  );
 
   // Cache data when it arrives from API
   useEffect(() => {
@@ -161,6 +232,13 @@ export default function Home() {
       setCachedData(CACHE_KEYS.PRICE_HISTORY, chartHistory);
     }
   }, [chartHistory]);
+
+  useEffect(() => {
+    if (vesselSnapshotRaw) {
+      setCachedData(CACHE_KEYS.VESSELS, vesselSnapshotRaw);
+      setVesselData(vesselSnapshotRaw);
+    }
+  }, [vesselSnapshotRaw]);
 
   // Load cached data and check if we need to fetch fresh data
   useEffect(() => {
@@ -436,6 +514,210 @@ export default function Home() {
             </CardContent>
           </Card>
         </div>
+
+        {/* 🚢 GULF MARITIME VESSEL TRACKING */}
+        <Card className="bg-white border-gray-200">
+          <CardHeader className="pb-2 border-b">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-sm font-semibold text-gray-700">🚢 GULF MARITIME VESSEL TRACKING — LIVE AIS SNAPSHOT</CardTitle>
+                <CardDescription className="text-xs">
+                  Persian Gulf · Strait of Hormuz · Red Sea · LNG tankers &amp; shipping traffic · Refreshes every 1 hr
+                  {!vesselData.isLive && (
+                    <span className="ml-2 text-amber-600 font-medium">⚠ Demo data — set AISHUB_USERNAME env var for live AIS</span>
+                  )}
+                </CardDescription>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-gray-400 hidden md:block truncate max-w-[220px]">{vesselData.source}</span>
+                <LiveBadge time={vesselData.fetchedAt} />
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-4">
+
+            {/* Region summary row */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <div className="flex items-start justify-between mb-1">
+                  <p className="text-xs font-bold text-blue-900 uppercase tracking-wide">Persian Gulf</p>
+                  <StaticBadge label="ELEVATED" color="bg-orange-100 text-orange-800 border-orange-300" />
+                </div>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-3xl font-bold text-blue-700">{vesselData.counts.persianGulf.total}</span>
+                  <span className="text-sm text-gray-500">vessels</span>
+                </div>
+                <p className="text-xs text-blue-700 mt-0.5">{vesselData.counts.persianGulf.tankers} tankers · {vesselData.counts.persianGulf.underway} underway</p>
+                <p className="text-xs text-gray-400 mt-1">lon 48°–56° E · LNG loading zone (Qatar)</p>
+              </div>
+              <div className="bg-red-50 border-2 border-red-300 rounded-lg p-3">
+                <div className="flex items-start justify-between mb-1">
+                  <p className="text-xs font-bold text-red-900 uppercase tracking-wide">Strait of Hormuz</p>
+                  <StaticBadge label="⚠ HIGH RISK" color="bg-red-100 text-red-800 border-red-300" />
+                </div>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-3xl font-bold text-red-700">{vesselData.counts.hormuz.total}</span>
+                  <span className="text-sm text-gray-500">vessels</span>
+                </div>
+                <p className="text-xs text-red-700 mt-0.5">{vesselData.counts.hormuz.tankers} tankers · critical chokepoint</p>
+                <p className="text-xs text-gray-400 mt-1">20% of global LNG · Iran &amp; Oman border</p>
+              </div>
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                <div className="flex items-start justify-between mb-1">
+                  <p className="text-xs font-bold text-orange-900 uppercase tracking-wide">Red Sea / Bab-el-Mandeb</p>
+                  <StaticBadge label="HOUTHI ZONE" color="bg-red-100 text-red-800 border-red-300" />
+                </div>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-3xl font-bold text-orange-700">{vesselData.counts.redSea.total}</span>
+                  <span className="text-sm text-gray-500">vessels</span>
+                </div>
+                <p className="text-xs text-orange-700 mt-0.5">{vesselData.counts.redSea.tankers} tankers · Houthi threat zone</p>
+                <p className="text-xs text-gray-400 mt-1">lon 32°–44° E · Bab-el-Mandeb chokepoint</p>
+              </div>
+            </div>
+
+            {/* SVG Maritime Corridor Map */}
+            <div className="rounded-lg overflow-hidden mb-4 border border-slate-700">
+              <svg viewBox="0 0 1000 210" className="w-full" style={{ background: '#0f172a', display: 'block' }}>
+                <defs>
+                  <radialGradient id="glowLng" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.7" />
+                    <stop offset="100%" stopColor="#22d3ee" stopOpacity="0" />
+                  </radialGradient>
+                  <radialGradient id="glowTanker" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.6" />
+                    <stop offset="100%" stopColor="#f59e0b" stopOpacity="0" />
+                  </radialGradient>
+                </defs>
+                {/* Ocean grid lines */}
+                {[0, 1, 2, 3].map(i => (
+                  <line key={i} x1="0" y1={i * 53} x2="1000" y2={i * 53} stroke="#1e3a5f" strokeWidth="0.5" opacity="0.7" />
+                ))}
+                {/* Persian Gulf water */}
+                <rect x="80" y="55" width="330" height="62" fill="#1d4ed8" opacity="0.22" />
+                {/* Hormuz chokepoint (red) */}
+                <rect x="410" y="51" width="62" height="70" fill="#991b1b" opacity="0.55" stroke="#ef4444" strokeWidth="1.5" />
+                {/* Gulf of Oman + Arabian Sea */}
+                <rect x="472" y="55" width="458" height="62" fill="#1e40af" opacity="0.15" />
+                {/* Qatar source box */}
+                <rect x="5" y="58" width="73" height="56" rx="5" fill="#1c1009" stroke="#ca8a04" strokeWidth="1.5" />
+                <text x="11" y="74" fill="#fef08a" fontSize="9" fontFamily="monospace" fontWeight="bold">⬡ QATAR</text>
+                <text x="11" y="87" fill="#ca8a04" fontSize="7.5" fontFamily="monospace">RAS LAFFAN</text>
+                <text x="11" y="100" fill="#92400e" fontSize="7">LNG SOURCE</text>
+                <text x="11" y="112" fill="#92400e" fontSize="7">50% India LNG</text>
+                {/* India destination box */}
+                <rect x="930" y="60" width="68" height="54" rx="5" fill="#052e16" stroke="#16a34a" strokeWidth="1.5" />
+                <text x="936" y="76" fill="#86efac" fontSize="9" fontFamily="monospace" fontWeight="bold">⬡ INDIA</text>
+                <text x="936" y="89" fill="#4ade80" fontSize="7">DAHEJ·KOCHI</text>
+                <text x="936" y="101" fill="#4ade80" fontSize="7">HAZIRA·MUNDRA</text>
+                <text x="936" y="112" fill="#16a34a" fontSize="7">DESTINATION</text>
+                {/* Route arrows */}
+                <path d="M 80 87 L 408 87" stroke="#3b82f6" strokeWidth="2" strokeDasharray="10,5" opacity="0.85" />
+                <path d="M 472 87 L 928 87" stroke="#3b82f6" strokeWidth="2" strokeDasharray="10,5" opacity="0.85" />
+                <polygon points="922,83 922,91 930,87" fill="#3b82f6" opacity="0.85" />
+                {/* Lane labels */}
+                <text x="245" y="50" fill="#93c5fd" fontSize="10" fontFamily="monospace" fontWeight="bold" textAnchor="middle">PERSIAN GULF</text>
+                <text x="700" y="50" fill="#93c5fd" fontSize="10" fontFamily="monospace" fontWeight="bold" textAnchor="middle">GULF OF OMAN · ARABIAN SEA</text>
+                {/* Hormuz labels */}
+                <text x="441" y="46" fill="#fca5a5" fontSize="9" fontFamily="monospace" fontWeight="bold" textAnchor="middle">HORMUZ</text>
+                <text x="441" y="131" fill="#fca5a5" fontSize="8" textAnchor="middle">⚠ CHOKEPOINT</text>
+                <text x="441" y="142" fill="#fca5a5" fontSize="7.5" textAnchor="middle">Iran/Oman border</text>
+                {/* Red Sea lane */}
+                <rect x="80" y="153" width="290" height="42" fill="#450a0a" opacity="0.6" stroke="#ef4444" strokeWidth="0.5" strokeDasharray="6,3" />
+                <text x="215" y="148" fill="#fca5a5" fontSize="10" fontFamily="monospace" fontWeight="bold" textAnchor="middle">RED SEA CORRIDOR</text>
+                <text x="215" y="188" fill="#7f1d1d" fontSize="8" textAnchor="middle">Houthi threat zone</text>
+                {/* Bab-el-Mandeb */}
+                <rect x="370" y="151" width="68" height="46" rx="3" fill="#7f1d1d" opacity="0.8" stroke="#ef4444" strokeWidth="1.5" />
+                <text x="404" y="167" fill="#fca5a5" fontSize="8.5" fontFamily="monospace" fontWeight="bold" textAnchor="middle">BAB-EL-MANDEB</text>
+                <text x="404" y="179" fill="#ef4444" fontSize="8" textAnchor="middle">⚠ HOUTHI ZONE</text>
+                <text x="404" y="191" fill="#fca5a5" fontSize="7" textAnchor="middle">Ships rerouting</text>
+                {/* Alt route connector */}
+                <path d="M 438 172 Q 460 145 472 110" stroke="#ef4444" strokeWidth="1.5" strokeDasharray="5,4" fill="none" opacity="0.7" />
+                <text x="480" y="148" fill="#ef4444" fontSize="8" fontFamily="monospace">↗ CAPE ROUTE</text>
+                <text x="480" y="159" fill="#6b7280" fontSize="7">(+14 days)</text>
+                {/* Vessel dots */}
+                {vesselData.vessels.map((v: any) => {
+                  const isLng = v.isLngCandidate;
+                  const isTanker = v.type >= 80 && v.type <= 89;
+                  const isUnderway = v.navstat === 0;
+                  const pos = getVesselSvgPos(v.lon, v.region, v.mmsi);
+                  const color = isLng ? '#22d3ee' : isTanker ? '#f59e0b' : '#9ca3af';
+                  const r = isLng ? 6 : 5;
+                  return (
+                    <g key={v.mmsi}>
+                      {isLng && <circle cx={pos.x} cy={pos.y} r={16} fill="url(#glowLng)" />}
+                      {!isLng && isTanker && <circle cx={pos.x} cy={pos.y} r={13} fill="url(#glowTanker)" />}
+                      <circle cx={pos.x} cy={pos.y} r={r} fill={color} stroke={isUnderway ? '#fff' : '#6b7280'} strokeWidth="1" opacity="0.95" />
+                      {isUnderway && <circle cx={pos.x} cy={pos.y} r={r + 2} fill="none" stroke={color} strokeWidth="0.8" opacity="0.4" />}
+                    </g>
+                  );
+                })}
+                {/* Legend */}
+                <rect x="812" y="155" width="184" height="52" rx="4" fill="#111827" stroke="#374151" strokeWidth="1" opacity="0.95" />
+                <circle cx="825" cy="168" r="5" fill="#22d3ee" />
+                <text x="835" y="172" fill="#e5e7eb" fontSize="8.5">LNG / gas carrier (cyan)</text>
+                <circle cx="825" cy="184" r="4.5" fill="#f59e0b" />
+                <text x="835" y="188" fill="#e5e7eb" fontSize="8.5">Oil / product tanker</text>
+                <circle cx="825" cy="199" r="4" fill="none" stroke="#22d3ee" strokeWidth="1.2" />
+                <text x="835" y="203" fill="#6b7280" fontSize="8">White border = underway</text>
+              </svg>
+            </div>
+
+            {/* Vessel table */}
+            <h3 className="text-xs font-bold text-gray-600 uppercase tracking-wide mb-2">Notable LNG &amp; Tanker Vessels in Transit</h3>
+            <div className="overflow-x-auto rounded border border-gray-100">
+              <table className="w-full text-xs min-w-[600px]">
+                <thead>
+                  <tr className="bg-gray-50 text-gray-500 border-b">
+                    <th className="text-left py-2 px-3 font-semibold">Vessel</th>
+                    <th className="text-left py-2 px-2 font-semibold">Type</th>
+                    <th className="text-left py-2 px-2 font-semibold">Region</th>
+                    <th className="text-right py-2 px-2 font-semibold">Speed</th>
+                    <th className="text-left py-2 px-2 font-semibold">Destination</th>
+                    <th className="text-left py-2 px-2 font-semibold">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {vesselData.vessels.filter((v: any) => v.type >= 70 && v.type <= 99).slice(0, 12).map((v: any) => (
+                    <tr key={v.mmsi} className="border-b hover:bg-gray-50 transition-colors">
+                      <td className="py-1.5 px-3">
+                        <div className="font-semibold text-gray-900">{v.flag || mmsiToFlag(v.mmsi)} {v.name}</div>
+                        <div className="text-gray-400 font-mono">MMSI {v.mmsi}</div>
+                      </td>
+                      <td className="py-1.5 px-2">
+                        <span className={`px-1.5 py-0.5 rounded text-xs font-semibold ${v.isLngCandidate ? 'bg-cyan-100 text-cyan-800' : 'bg-amber-100 text-amber-800'}`}>
+                          {v.isLngCandidate ? '⛽ LNG' : '🛢 Tanker'}
+                        </span>
+                      </td>
+                      <td className="py-1.5 px-2">
+                        <span className={`text-xs font-medium ${v.region === 'hormuz' ? 'text-red-600' : v.region === 'red_sea' ? 'text-orange-600' : 'text-blue-600'}`}>
+                          {REGION_LABELS[v.region] ?? v.region}
+                        </span>
+                      </td>
+                      <td className="py-1.5 px-2 text-right font-mono">
+                        <span className={v.speed > 0.5 ? 'text-green-700 font-semibold' : 'text-gray-400'}>{v.speed.toFixed(1)} kt</span>
+                      </td>
+                      <td className="py-1.5 px-2 text-gray-700 font-medium">{v.destination || '—'}</td>
+                      <td className="py-1.5 px-2">
+                        <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium ${
+                          v.navstat === 0 ? 'bg-green-100 text-green-700' :
+                          v.navstat === 1 ? 'bg-blue-100 text-blue-700' :
+                          v.navstat === 5 ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-600'
+                        }`}>
+                          {v.navstat === 0 ? '▶ UNDERWAY' : v.navstat === 1 ? '⚓ ANCHORED' : v.navstat === 5 ? '⏸ MOORED' : '◻ OTHER'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="text-xs text-gray-400 mt-2">
+              Source: {vesselData.source} · AIS position data · refreshes every 1 hour ·{' '}
+              <a href="https://www.aishub.net" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">aishub.net</a>
+            </p>
+          </CardContent>
+        </Card>
 
         {/* 🟡 P2: ALWAYS-VISIBLE CONTEXT (Shipping Routes + Supplier Status) */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
