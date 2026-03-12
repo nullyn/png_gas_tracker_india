@@ -42,11 +42,11 @@ const SUPPLY_SOURCES = [
 ];
 
 const CATEGORY_LABELS: Record<string, string> = {
-  lng_benchmark: 'LNG Benchmarks & Global Gas',
-  crude_oil: 'Crude Oil Futures',
-  india_gas_stock: 'India Gas Sector Stocks',
-  macro: 'Macro Indicators',
-};
+   lng_benchmark: 'LNG Benchmarks & Global Gas',
+   crude_oil: 'Crude Oil Futures',
+   macro: 'Macro Indicators',
+   india_gas_stock: 'India Gas Sector Stocks',
+ };
 
 const FALLBACK_TERMINALS = [
   { terminalName: 'Dahej', operator: 'Petronet LNG Ltd', state: 'Gujarat', capacityMmtpa: 17.5, currentReserveMmtpa: 14.9, utilizationPercent: 85, reserveDays: 3.1, status: 'normal' },
@@ -833,7 +833,8 @@ export default function Home() {
                       <div>
                         <CardTitle className="text-sm font-semibold text-gray-700">{label.toUpperCase()}</CardTitle>
                         <CardDescription className="text-xs">
-                          Source: Yahoo Finance · Technical indicators: RSI(14), MACD(12,26,9), SMA(20,50), Bollinger(20,2) · 90-day history
+                          Source: Yahoo Finance · Technical indicators: RSI(14), MACD(12,26,9), SMA(20,50), Bollinger(20,2) · 90-day history<br />
+                          Last fetched: {items[0]?.fetchedAt ? new Date(items[0].fetchedAt).toLocaleString('en-IN', { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }) : 'N/A'}
                         </CardDescription>
                       </div>
                       <LiveBadge time={items[0]?.fetchedAt} />
