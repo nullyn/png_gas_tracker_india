@@ -82,15 +82,16 @@ async function fetchAisstreamVessels(apiKey: string): Promise<AisVessel[]> {
       resolve(vessels);
     };
 
-    const timer = setTimeout(settle, 18000); // 18-second collection window
+    const timer = setTimeout(settle, 25000); // 25-second collection window
 
     const ws = new WebSocket("wss://stream.aisstream.io/v0/stream");
     console.log("[VesselTracking] Connecting to AISStream...");
 
     ws.on("open", () => {
       console.log("[VesselTracking] WebSocket opened, sending subscription");
+      // AISStream JS docs use 'Apikey' (lowercase k); trying that over 'APIKey'
       ws.send(JSON.stringify({
-        APIKey: apiKey,
+        Apikey: apiKey,
         BoundingBoxes: [
           [[22, 47], [30.5, 64]],  // Persian Gulf + Hormuz + Gulf of Oman
           [[11, 32], [30, 45]],    // Red Sea

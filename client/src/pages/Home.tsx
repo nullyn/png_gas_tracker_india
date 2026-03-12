@@ -79,21 +79,23 @@ const FALLBACK_X_POSTS = [
   { id: 5, author: '@MarineTraffic', handle: 'MarineTraffic', avatar: '🚢', text: 'Average LNG vessel transit time India: 28 days (vs 18 days pre-Suez crisis). Shipping delays add $2M+ per voyage. Re-routing trends show 40% Cape of Good Hope traffic increase.', timestamp: new Date(Date.now() - 18000000), likes: 1654, retweets: 923, url: 'https://twitter.com/MarineTraffic' },
 ];
 
+// Flat baseline ~43–46 for days 1–12, then sharp 3-day surge:
+// day 13: 45 → day 15: 88 = +95.6% surge, matching the displayed stat
 const FALLBACK_GOOGLE_TRENDS = [
-  { day: 'Mar 1', value: 45 },
-  { day: 'Mar 2', value: 48 },
-  { day: 'Mar 3', value: 52 },
-  { day: 'Mar 4', value: 58 },
-  { day: 'Mar 5', value: 62 },
-  { day: 'Mar 6', value: 55 },
-  { day: 'Mar 7', value: 61 },
-  { day: 'Mar 8', value: 67 },
-  { day: 'Mar 9', value: 71 },
-  { day: 'Mar 10', value: 68 },
-  { day: 'Mar 11', value: 73 },
-  { day: 'Mar 12', value: 79 },
-  { day: 'Mar 13', value: 82 },
-  { day: 'Mar 14', value: 85 },
+  { day: 'Mar 1',  value: 44 },
+  { day: 'Mar 2',  value: 42 },
+  { day: 'Mar 3',  value: 45 },
+  { day: 'Mar 4',  value: 43 },
+  { day: 'Mar 5',  value: 46 },
+  { day: 'Mar 6',  value: 42 },
+  { day: 'Mar 7',  value: 44 },
+  { day: 'Mar 8',  value: 43 },
+  { day: 'Mar 9',  value: 45 },
+  { day: 'Mar 10', value: 44 },
+  { day: 'Mar 11', value: 43 },
+  { day: 'Mar 12', value: 45 },
+  { day: 'Mar 13', value: 45 },
+  { day: 'Mar 14', value: 66 },
   { day: 'Mar 15', value: 88 },
 ];
 
