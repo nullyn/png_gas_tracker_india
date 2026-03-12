@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import { trpc } from '@/lib/trpc';
-import { AlertCircle, TrendingDown, TrendingUp, Flame, AlertTriangle, Clock, ExternalLink, RefreshCw, Activity, BarChart2, Database, Shield, Github, Heart, MessageCircle } from 'lucide-react';
+import { AlertCircle, TrendingDown, TrendingUp, Flame, AlertTriangle, Clock, ExternalLink, Activity, BarChart2, Shield, Github, Heart, MessageCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { LoadingOverlay } from '@/components/LoadingOverlay';
+import { getCachedData, setCachedData, isDataStale, getCacheAge, CACHE_KEYS, CACHE_DURATION } from '@/lib/cache';
 import {
   LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis,
   CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell,
@@ -95,38 +96,93 @@ const FALLBACK_GOOGLE_TRENDS = [
 ];
 
 export default function Home() {
-  const [lastRefresh, setLastRefresh] = useState(new Date());
   const [selectedSymbol, setSelectedSymbol] = useState('NG=F');
   const [activeTab, setActiveTab] = useState('overview');
+  const [isInitialLoading, setIsInitialLoading] = useState(false);
+  const [dataLastFetched, setDataLastFetched] = useState<Date | null>(null);
 
-  const { data: supplyMetrics, refetch: refetchSupply } = trpc.dashboard.latestSupplyMetrics.useQuery(undefined, { refetchInterval: 300_000 });
-  const { data: metricsHistory, refetch: refetchMetricsHistory } = trpc.dashboard.supplyMetricsHistory.useQuery(undefined, { refetchInterval: 300_000 });
-  const { data: futures, refetch: refetchFutures } = trpc.dashboard.latestFutures.useQuery(undefined, { refetchInterval: 300_000 });
-  const { data: terminals } = trpc.dashboard.terminalReserves.useQuery(undefined, { refetchInterval: 300_000 });
-  const { data: activeAlerts } = trpc.dashboard.activeAlerts.useQuery(undefined, { refetchInterval: 60_000 });
-  const { data: geoEvents } = trpc.dashboard.geopoliticalEvents.useQuery(undefined, { refetchInterval: 300_000 });
-  const { data: chartHistory } = trpc.dashboard.priceHistory.useQuery({ symbol: selectedSymbol, days: 30 }, { refetchInterval: 300_000 });
+  // Check if data needs refresh (older than 30 minutes)
+  const needsRefresh = () => {
+    const cachedTime = getCacheAge(CACHE_KEYS.SUPPLY_METRICS);
+    if (!cachedTime) return true; // No cache, needs refresh
+    return cachedTime > 1800; // 30 minutes in seconds
+  };
 
-  const refreshMutation = trpc.dashboard.refresh.useMutation({
-    onSuccess: () => {
-      setLastRefresh(new Date());
-      refetchSupply();
-      refetchFutures();
-    },
-  });
+  const { data: supplyMetrics } = trpc.dashboard.latestSupplyMetrics.useQuery(undefined, { enabled: needsRefresh() });
+  const { data: metricsHistory } = trpc.dashboard.supplyMetricsHistory.useQuery(undefined, { enabled: needsRefresh() });
+  const { data: futures } = trpc.dashboard.latestFutures.useQuery(undefined, { enabled: needsRefresh() });
+  const { data: terminals } = trpc.dashboard.terminalReserves.useQuery(undefined, { enabled: needsRefresh() });
+  const { data: activeAlerts } = trpc.dashboard.activeAlerts.useQuery(undefined, { enabled: needsRefresh() });
+  const { data: geoEvents } = trpc.dashboard.geopoliticalEvents.useQuery(undefined, { enabled: needsRefresh() });
+  const { data: chartHistory } = trpc.dashboard.priceHistory.useQuery({ symbol: selectedSymbol, days: 30 }, { enabled: needsRefresh() });
 
-  const backfillMutation = trpc.dashboard.backfillHistory.useMutation({
-    onSuccess: () => {
-      refetchMetricsHistory();
-      console.log("Backfill complete");
-    },
-  });
-
-  useEffect(() => { refreshMutation.mutate(); }, []);
+  // Cache data when it arrives from API
+  useEffect(() => {
+    if (supplyMetrics) {
+      setCachedData(CACHE_KEYS.SUPPLY_METRICS, supplyMetrics);
+      setDataLastFetched(new Date());
+      setIsInitialLoading(false);
+    }
+  }, [supplyMetrics]);
 
   useEffect(() => {
-    const timer = setInterval(() => setLastRefresh(new Date()), 300_000);
-    return () => clearInterval(timer);
+    if (metricsHistory) {
+      setCachedData(CACHE_KEYS.METRICS_HISTORY, metricsHistory);
+    }
+  }, [metricsHistory]);
+
+  useEffect(() => {
+    if (futures) {
+      setCachedData(CACHE_KEYS.FUTURES, futures);
+    }
+  }, [futures]);
+
+  useEffect(() => {
+    if (terminals) {
+      setCachedData(CACHE_KEYS.TERMINALS, terminals);
+    }
+  }, [terminals]);
+
+  useEffect(() => {
+    if (activeAlerts) {
+      setCachedData(CACHE_KEYS.ALERTS, activeAlerts);
+    }
+  }, [activeAlerts]);
+
+  useEffect(() => {
+    if (geoEvents) {
+      setCachedData(CACHE_KEYS.GEO_EVENTS, geoEvents);
+    }
+  }, [geoEvents]);
+
+  useEffect(() => {
+    if (chartHistory) {
+      setCachedData(CACHE_KEYS.PRICE_HISTORY, chartHistory);
+    }
+  }, [chartHistory]);
+
+  // Load cached data and check if we need to fetch fresh data
+  useEffect(() => {
+    const cachedSupply = getCachedData(CACHE_KEYS.SUPPLY_METRICS);
+    const cachedMetricsHistory = getCachedData(CACHE_KEYS.METRICS_HISTORY);
+    const cachedFutures = getCachedData(CACHE_KEYS.FUTURES);
+    const cachedTerminals = getCachedData(CACHE_KEYS.TERMINALS);
+    const cachedAlerts = getCachedData(CACHE_KEYS.ALERTS);
+    const cachedGeo = getCachedData(CACHE_KEYS.GEO_EVENTS);
+    const cachedPrice = getCachedData(CACHE_KEYS.PRICE_HISTORY);
+
+    // If no cached data at all, show loading overlay
+    if (!cachedSupply && needsRefresh()) {
+      setIsInitialLoading(true);
+    } else if (cachedSupply) {
+      setIsInitialLoading(false);
+    }
+
+    // Restore last fetch time from cache
+    const cacheAge = getCacheAge(CACHE_KEYS.SUPPLY_METRICS);
+    if (cacheAge !== null) {
+      setDataLastFetched(new Date(Date.now() - cacheAge * 1000));
+    }
   }, []);
 
   const riskScore = supplyMetrics?.riskScore ?? 72;
@@ -213,6 +269,8 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <LoadingOverlay isVisible={isInitialLoading} message="Loading real-time LNG data..." />
+      
       {/* Header */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
         <div className="max-w-screen-2xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -227,17 +285,11 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-4">
             <div className="hidden md:flex items-center gap-4 text-xs text-gray-500">
-              <span>Refreshed: <span className="font-mono text-gray-700">{lastRefresh.toLocaleTimeString('en-IN', { hour12: false })}</span></span>
-              <LiveBadge time={supplyMetrics?.fetchedAt} />
+              {dataLastFetched && (
+                <span>Last updated: <span className="font-mono text-gray-700">{Math.floor((Date.now() - dataLastFetched.getTime()) / 60000)} min ago</span></span>
+              )}
+              <LiveBadge time={dataLastFetched || supplyMetrics?.fetchedAt} />
             </div>
-            <Button size="sm" variant="outline" onClick={() => backfillMutation.mutate()} disabled={backfillMutation.isPending} className="gap-1.5" title="Backfill 30 days of historical supply metrics">
-              <Database className={`w-3.5 h-3.5 ${backfillMutation.isPending ? 'animate-spin' : ''}`} />
-              {backfillMutation.isPending ? 'Backfilling…' : 'Backfill 30d'}
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => refreshMutation.mutate()} disabled={refreshMutation.isPending} className="gap-1.5">
-              <RefreshCw className={`w-3.5 h-3.5 ${refreshMutation.isPending ? 'animate-spin' : ''}`} />
-              {refreshMutation.isPending ? 'Refreshing…' : 'Refresh All'}
-            </Button>
           </div>
         </div>
       </div>
