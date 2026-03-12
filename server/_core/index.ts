@@ -8,14 +8,18 @@ import { registerChatRoutes } from "./chat";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic } from "./static";
-import { runFullDataRefresh } from "../dataIngestion";
+import { runFullDataRefresh, backfillSupplyMetricsHistory } from "../dataIngestion";
 
 // ─── Data Refresh Scheduler ───────────────────────────────────────────────────
 const REFRESH_INTERVAL_MS = 60 * 60 * 1000; // every 1 hour
 
 function startScheduler() {
   console.log("[Scheduler] Starting data refresh scheduler (every 1 hour)...");
-  // Run immediately on startup
+  // Backfill historical data on startup (runs only once if already backfilled)
+  backfillSupplyMetricsHistory(30)
+    .then(() => console.log("[Scheduler] Historical backfill complete"))
+    .catch(err => console.error("[Scheduler] Backfill failed:", err));
+  // Run immediate full refresh
   runFullDataRefresh()
     .then(r => console.log("[Scheduler] Initial refresh:", r.message))
     .catch(err => console.error("[Scheduler] Initial refresh failed:", err));

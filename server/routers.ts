@@ -5,7 +5,7 @@ import { publicProcedure, router } from "./_core/trpc";
 import { getDb } from "./db";
 import { futuresData, supplyMetrics, terminalReserves, alerts, geopoliticalEvents, priceHistory } from "../drizzle/schema";
 import { desc, eq, gte, and } from "drizzle-orm";
-import { runFullDataRefresh, INSTRUMENTS } from "./dataIngestion";
+import { runFullDataRefresh, INSTRUMENTS, backfillSupplyMetricsHistory } from "./dataIngestion";
 import { z } from "zod/v4";
 
 export const appRouter = router({
@@ -104,6 +104,15 @@ export const appRouter = router({
     refresh: publicProcedure.mutation(async () => {
       return runFullDataRefresh();
     }),
+
+    backfillHistory: publicProcedure
+      .input(z.object({
+        days: z.number().default(30).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        await backfillSupplyMetricsHistory(input.days ?? 30);
+        return { success: true, message: "Backfill completed" };
+      }),
 
     instruments: publicProcedure.query(() => INSTRUMENTS),
   }),

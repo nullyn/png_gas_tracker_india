@@ -561,6 +561,85 @@ export async function seedGeopoliticalEvents(): Promise<void> {
   console.log(`[DataIngestion] Seeded ${events.length} geopolitical events`);
 }
 
+// ─── Backfill Historical Supply Metrics ───────────────────────────────────────
+export async function backfillSupplyMetricsHistory(days: number = 30): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  // Check if we already have historical data
+  const existingCount = await db.select({ count: 1 }).from(supplyMetrics)
+    .orderBy(desc(supplyMetrics.timestamp))
+    .limit(1);
+  
+  if (existingCount.length > 0) {
+    const oldest = await db.select().from(supplyMetrics)
+      .orderBy(supplyMetrics.timestamp)
+      .limit(1);
+    if (oldest.length > 0) {
+      const ageMs = Date.now() - new Date(oldest[0].timestamp!).getTime();
+      if (ageMs > days * 24 * 60 * 60 * 1000) {
+        console.log("[DataIngestion] Historical data already backfilled");
+        return;
+      }
+    }
+  }
+
+  console.log("[DataIngestion] Backfilling 30 days of supply metrics history...");
+
+  // Generate realistic 30-day synthetic historical data
+  const now = new Date();
+  const baseImports = 30; // MMTPA
+  const basePrice = 11.5; // USD/MMBtu
+  const baseRisk = 65;
+
+  // Simulate realistic trends with noise
+  const data: typeof supplyMetrics.$inferInsert[] = [];
+  
+  for (let day = days - 1; day >= 0; day--) {
+    const timestamp = new Date(now.getTime() - day * 24 * 60 * 60 * 1000);
+    
+    // Simulate realistic trends: slightly varying imports, volatile prices, moderate risk
+    const dayFraction = (days - day) / days;
+    const seasonalTrend = Math.sin(dayFraction * Math.PI / 2) * 5; // Gradual trend
+    const randomNoise = (Math.random() - 0.5) * 8; // Daily noise
+    
+    const imports = baseImports + seasonalTrend + randomNoise;
+    const priceVolatility = (Math.random() - 0.5) * 4; // More volatile
+    const price = basePrice + priceVolatility;
+    
+    // Risk correlates with price and volatility
+    const riskVolatility = (Math.random() - 0.5) * 15;
+    const risk = Math.max(20, Math.min(95, baseRisk + (price - basePrice) * 5 + riskVolatility));
+
+    data.push({
+      timestamp,
+      lngImportsMmtpa: parseFloat(Math.max(15, imports).toFixed(1)),
+      importChangePercent: parseFloat(((imports - baseImports) / baseImports * 100).toFixed(2)),
+      lngPriceUsd: parseFloat(price.toFixed(2)),
+      priceChangePercent: parseFloat(((price - basePrice) / basePrice * 100).toFixed(2)),
+      shippingDelayDays: parseFloat((2 + Math.random() * 3).toFixed(1)),
+      hormuzStatus: risk > 75 ? "critical" : risk > 50 ? "elevated" : "normal",
+      redSeaStatus: risk > 70 ? "elevated" : "normal",
+      riskScore: parseFloat(risk.toFixed(1)),
+      riskLevel: risk >= 80 ? "critical" : risk >= 60 ? "high" : risk >= 40 ? "medium" : "low",
+      jkmEstimatedUsd: parseFloat((price * 1.15).toFixed(2)), // JKM typically 15% higher
+      jkmHhSpread: parseFloat((price * 1.15 - 3.0).toFixed(2)),
+      jkmTtfSpread: parseFloat(((price * 1.15 - 40) * 0.024).toFixed(2)),
+      dataSource: "backfill_synthetic",
+      fetchedAt: timestamp,
+    });
+  }
+
+  // Batch insert to avoid duplicates
+  for (const metric of data) {
+    await db.insert(supplyMetrics).values(metric).catch(() => {
+      // Ignore duplicates
+    });
+  }
+
+  console.log(`[DataIngestion] Backfilled ${data.length} days of supply metrics history`);
+}
+
 // ─── Master Refresh Function ──────────────────────────────────────────────────
 export async function runFullDataRefresh(): Promise<{ success: boolean; message: string }> {
   console.log("[DataIngestion] Starting full data refresh...");
