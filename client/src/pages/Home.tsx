@@ -749,68 +749,6 @@ export default function Home() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-white">
-                <CardHeader className="pb-2 border-b">
-                  <CardTitle className="text-sm font-semibold text-gray-700">SHIPPING ROUTE STATUS</CardTitle>
-                  <CardDescription className="text-xs">Source: MarineTraffic AIS · Reuters</CardDescription>
-                </CardHeader>
-                <CardContent className="pt-4 space-y-2.5">
-                  {[
-                    { name: 'Strait of Hormuz', status: supplyMetrics?.hormuzStatus ?? 'critical', note: '80-90% of India LNG passes through' },
-                    { name: 'Red Sea / Bab-el-Mandeb', status: supplyMetrics?.redSeaStatus ?? 'elevated', note: 'Houthi attacks — tankers rerouting' },
-                    { name: 'Cape of Good Hope', status: 'elevated', note: 'Alternate route — +10-14 day delay' },
-                    { name: 'Australia Route', status: 'normal', note: 'Normal operations' },
-                  ].map((r, i) => (
-                    <div key={i} className={`p-2.5 rounded border ${r.status === 'critical' ? 'bg-red-50 border-red-200' : r.status === 'elevated' ? 'bg-orange-50 border-orange-200' : 'bg-green-50 border-green-200'}`}>
-                      <div className="flex items-center justify-between mb-0.5">
-                        <p className="font-semibold text-sm text-gray-900">{r.name}</p>
-                        <Badge className={r.status === 'critical' ? 'bg-red-600 text-white' : r.status === 'elevated' ? 'bg-orange-500 text-white' : 'bg-green-600 text-white'}>
-                          {r.status.toUpperCase()}
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-gray-600">{r.note}</p>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-
-              <Card className="bg-white">
-                <CardHeader className="pb-2 border-b">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-sm font-semibold text-gray-700">KEY SUPPLIER STATUS</CardTitle>
-                      <CardDescription className="text-xs">Source: Port Authority Data · S&P Global Platts</CardDescription>
-                    </div>
-                    <LiveBadge time={supplyMetrics?.fetchedAt} />
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-4 space-y-3">
-                  <p className="text-xs text-gray-500 bg-blue-50 border border-blue-100 rounded px-2 py-1.5">
-                    <span className="font-semibold text-blue-700">Bar = Current supply delivery capacity</span> as % of contracted volume. 100% = full contracted supply flowing normally. Disruptions reduce this below 100%.
-                  </p>
-                  {[
-                    { name: 'Qatar (50% of imports)', status: 'AFFECTED', pct: 30, color: 'bg-red-500', badgeColor: 'bg-red-100 text-red-800 border-red-300', note: '30% of contracted volume delivering — Hormuz risk' },
-                    { name: 'UAE (20% of imports)', status: 'ELEVATED', pct: 60, color: 'bg-orange-500', badgeColor: 'bg-orange-100 text-orange-800 border-orange-300', note: '60% of contracted volume delivering — delays' },
-                    { name: 'Australia (15% of imports)', status: 'NORMAL', pct: 85, color: 'bg-green-500', badgeColor: 'bg-green-100 text-green-800 border-green-300', note: '85% of contracted volume delivering — minor delays' },
-                    { name: 'Others (15% of imports)', status: 'NORMAL', pct: 75, color: 'bg-blue-500', badgeColor: 'bg-green-100 text-green-800 border-green-300', note: '75% of contracted volume delivering' },
-                  ].map((s, i) => (
-                    <div key={i}>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium text-gray-800">{s.name}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-gray-700">{s.pct}%</span>
-                          <StaticBadge label={s.status} color={s.badgeColor} />
-                        </div>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className={`${s.color} h-2 rounded-full transition-all`} style={{ width: `${s.pct}%` }} />
-                      </div>
-                      <p className="text-xs text-gray-400 mt-0.5">{s.note}</p>
-                    </div>
-                  ))}
-                  <p className="text-xs text-gray-400 mt-2">Source: Port Authority of Qatar · ADNOC UAE · {supplyMetrics?.fetchedAt ? new Date(supplyMetrics.fetchedAt).toLocaleString('en-IN') : 'N/A'}</p>
-                </CardContent>
-              </Card>
             </div>
           </TabsContent>
 
