@@ -149,7 +149,7 @@ export default function Home() {
   const trendChartData = useMemo(() => {
     if (!metricsHistory || metricsHistory.length === 0) {
       return Array.from({ length: 30 }, (_, i) => ({
-        date: `Day ${i + 1}`, imports: 45 - i * 0.5, price: 8.5 + i * 0.3, risk: 35 + i * 1.5,
+        date: `Day ${i + 1}`, imports: 45 - i * 0.5, jkm: 12.5 + i * 0.1, risk: 35 + i * 1.5,
       }));
     }
     // Aggregate by day to avoid intra-day noise
@@ -157,10 +157,10 @@ export default function Home() {
     [...metricsHistory].reverse().forEach(m => {
       const dateKey = new Date(m.timestamp).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: '2-digit' });
       if (!dailyData[dateKey]) {
-        dailyData[dateKey] = { date: dateKey, imports: [], price: [], risk: [], count: 0 };
+        dailyData[dateKey] = { date: dateKey, imports: [], jkm: [], risk: [], count: 0 };
       }
       if (m.lngImportsMmtpa) dailyData[dateKey].imports.push(+m.lngImportsMmtpa);
-      if (m.lngPriceUsd) dailyData[dateKey].price.push(+m.lngPriceUsd);
+      if (m.jkmEstimatedUsd) dailyData[dateKey].jkm.push(+m.jkmEstimatedUsd);
       if (m.riskScore) dailyData[dateKey].risk.push(+m.riskScore);
       dailyData[dateKey].count++;
     });
@@ -168,7 +168,7 @@ export default function Home() {
     return Object.values(dailyData).map(day => ({
       date: day.date,
       imports: day.imports.length > 0 ? +(day.imports.reduce((a: number, b: number) => a + b, 0) / day.imports.length).toFixed(1) : null,
-      price: day.price.length > 0 ? +(day.price.reduce((a: number, b: number) => a + b, 0) / day.price.length).toFixed(2) : null,
+      jkm: day.jkm.length > 0 ? +(day.jkm.reduce((a: number, b: number) => a + b, 0) / day.jkm.length).toFixed(2) : null,
       risk: day.risk.length > 0 ? +(day.risk.reduce((a: number, b: number) => a + b, 0) / day.risk.length).toFixed(0) : null,
     }));
   }, [metricsHistory]);
@@ -503,9 +503,9 @@ export default function Home() {
                 <CardHeader className="pb-2 border-b">
                   <div className="flex items-center justify-between">
                     <div>
-                      <CardTitle className="text-sm font-semibold text-gray-700">LNG IMPORT TREND vs PRICE</CardTitle>
-                      <CardDescription className="text-xs">30-day rolling · Source: PNGRB + Yahoo Finance (NG=F)</CardDescription>
-                    </div>
+                       <CardTitle className="text-sm font-semibold text-gray-700">LNG IMPORT TREND vs JKM SPOT PRICE</CardTitle>
+                       <CardDescription className="text-xs">30-day rolling · Source: PNGRB (imports) + JKM Asia LNG Benchmark (price). JKM = India's landed LNG cost (Henry Hub + liquefaction + shipping + regasification)</CardDescription>
+                     </div>
                     <LiveBadge time={supplyMetrics?.fetchedAt} />
                   </div>
                 </CardHeader>
@@ -519,7 +519,7 @@ export default function Home() {
                       <Tooltip contentStyle={{ fontSize: 12, borderRadius: 6 }} />
                       <Legend wrapperStyle={{ fontSize: 11 }} />
                       <Area yAxisId="left" type="monotone" dataKey="imports" stroke="#3b82f6" fill="#dbeafe" name="Imports (MMTPA)" />
-                      <Line yAxisId="right" type="monotone" dataKey="price" stroke="#ef4444" strokeWidth={2} dot={false} name="Price ($/MMBtu)" />
+                       <Line yAxisId="right" type="monotone" dataKey="jkm" stroke="#ef4444" strokeWidth={2} dot={false} name="JKM Spot Price ($/MMBtu)" />
                     </ComposedChart>
                   </ResponsiveContainer>
                 </CardContent>
