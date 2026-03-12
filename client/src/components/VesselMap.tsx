@@ -1,6 +1,6 @@
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { MapContainer, TileLayer, CircleMarker, Tooltip, Rectangle } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Tooltip, Rectangle } from 'react-leaflet';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Vessel = {
@@ -23,26 +23,25 @@ interface VesselMapProps {
   isLive: boolean;
 }
 
-// ─── Map config ───────────────────────────────────────────────────────────────
-const TILES_URL = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+// ─── Map config — CartoDB Positron (light, clean) ─────────────────────────────
+const TILES_URL = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
 const TILES_ATTR =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
 
-// Covers Persian Gulf, Hormuz, Gulf of Oman, Red Sea in one view
 const MAP_BOUNDS: L.LatLngBoundsExpression = [
   [9, 29],
   [32, 69],
 ];
 
-// ─── Risk zone definitions ────────────────────────────────────────────────────
+// ─── Risk zone definitions — tuned for light map ──────────────────────────────
 const RISK_ZONES = [
   {
     id: 'persian_gulf',
     bounds: [[22, 47], [30.5, 57]] as L.LatLngBoundsExpression,
-    color: '#3b82f6',
-    fillColor: '#1d4ed8',
-    fillOpacity: 0.07,
-    weight: 0.6,
+    color: '#2563eb',
+    fillColor: '#3b82f6',
+    fillOpacity: 0.1,
+    weight: 1,
     dash: '6,4',
     tooltip: 'Persian Gulf — Qatar LNG loading zone\n~50% of India\'s LNG originates here',
     tooltipClass: 'blue',
@@ -51,9 +50,9 @@ const RISK_ZONES = [
     id: 'gulf_of_oman',
     bounds: [[21, 57], [26.5, 65]] as L.LatLngBoundsExpression,
     color: '#6366f1',
-    fillColor: '#4338ca',
-    fillOpacity: 0.05,
-    weight: 0.5,
+    fillColor: '#6366f1',
+    fillOpacity: 0.08,
+    weight: 0.8,
     dash: '6,4',
     tooltip: 'Gulf of Oman — transit corridor from Hormuz to open sea',
     tooltipClass: 'blue',
@@ -61,10 +60,10 @@ const RISK_ZONES = [
   {
     id: 'hormuz',
     bounds: [[25, 55.5], [27.5, 57.5]] as L.LatLngBoundsExpression,
-    color: '#ef4444',
+    color: '#dc2626',
     fillColor: '#ef4444',
-    fillOpacity: 0.22,
-    weight: 1.5,
+    fillOpacity: 0.28,
+    weight: 2,
     dash: undefined,
     tooltip: '⚠ STRAIT OF HORMUZ — Critical chokepoint\n~20% of global LNG trade passes here\nIran/Oman border · 34 km wide at narrowest',
     tooltipClass: 'red',
@@ -72,10 +71,10 @@ const RISK_ZONES = [
   {
     id: 'red_sea',
     bounds: [[11, 32], [28, 44]] as L.LatLngBoundsExpression,
-    color: '#f97316',
+    color: '#ea580c',
     fillColor: '#f97316',
-    fillOpacity: 0.08,
-    weight: 0.7,
+    fillOpacity: 0.12,
+    weight: 1,
     dash: '6,4',
     tooltip: '⚠ RED SEA CORRIDOR — Houthi threat zone\nShips rerouting via Cape of Good Hope (+14 days)',
     tooltipClass: 'orange',
@@ -83,10 +82,10 @@ const RISK_ZONES = [
   {
     id: 'bab_mandeb',
     bounds: [[11.5, 43.2], [13.5, 45]] as L.LatLngBoundsExpression,
-    color: '#ef4444',
+    color: '#dc2626',
     fillColor: '#ef4444',
-    fillOpacity: 0.32,
-    weight: 1.5,
+    fillOpacity: 0.38,
+    weight: 2,
     dash: undefined,
     tooltip: '⚠ BAB-EL-MANDEB — Southern Red Sea chokepoint\nActive Houthi missile / drone zone',
     tooltipClass: 'red',
@@ -104,14 +103,58 @@ const NAVSTAT: Record<number, string> = {
   8: 'Under way (sailing)',
 };
 
-function vesselColor(v: Vessel): string {
-  if (v.isLngCandidate) return '#22d3ee';   // cyan  — LNG / gas carrier
-  if (v.navstat === 0)   return '#f59e0b';   // amber — underway tanker / cargo
-  return '#94a3b8';                           // slate — anchored / moored / other
+// Vessel fill colors — darker shades for readability on a light map
+function vesselFill(v: Vessel): string {
+  if (v.isLngCandidate) return '#0e7490'; // deep cyan — LNG carrier
+  if (v.navstat === 0)   return '#b45309'; // dark amber — tanker underway
+  return '#475569';                        // slate — anchored / moored
 }
 
-function vesselRadius(v: Vessel): number {
-  return v.isLngCandidate ? 7 : 5;
+// Vessel stroke — white for LNG to pop, dark for others
+function vesselStroke(v: Vessel): string {
+  return v.isLngCandidate ? '#fff' : '#1e293b';
+}
+
+/**
+ * Ship-shaped SVG DivIcon.
+ * Shape: pointed bow (top), wider stern (bottom) — a classic top-down vessel silhouette.
+ * Rotated by the vessel's AIS heading so it points in the right direction.
+ */
+function createShipIcon(v: Vessel): L.DivIcon {
+  const fill   = vesselFill(v);
+  const stroke = vesselStroke(v);
+  const isLng  = v.isLngCandidate;
+
+  // LNG carriers get a slightly larger icon
+  const W = isLng ? 14 : 11;
+  const H = isLng ? 22 : 17;
+
+  // Heading: 0 = north (bow points up in SVG). 511 = unknown → default north.
+  const hdg = v.heading >= 0 && v.heading < 360 ? v.heading : 0;
+
+  // Ship silhouette in a 14×22 (or 11×17) viewBox — bow at top.
+  // The path draws: sharp bow → flared stern quarters → flat transom.
+  const path = 'M 7 1 L 13 18 L 10 15 L 7 17 L 4 15 L 1 18 Z';
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg"
+     width="${W}" height="${H}"
+     viewBox="0 0 14 22"
+     style="display:block;transform:rotate(${hdg}deg);transform-origin:50% 50%;overflow:visible">
+  <path d="${path}"
+        fill="${fill}"
+        stroke="${stroke}"
+        stroke-width="1.8"
+        stroke-linejoin="round"/>
+  ${isLng ? `<circle cx="7" cy="12" r="2" fill="white" opacity="0.5"/>` : ''}
+</svg>`;
+
+  return L.divIcon({
+    html: svg,
+    className: 'vessel-ship-icon',
+    iconSize:   [W, H],
+    iconAnchor: [W / 2, H / 2],
+    tooltipAnchor: [W / 2 + 4, 0],
+  });
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -121,15 +164,15 @@ export function VesselMap({ vessels, isLive }: VesselMapProps) {
   );
 
   return (
-    <div className="relative rounded-xl overflow-hidden border border-slate-700 shadow-lg" style={{ height: 440 }}>
+    <div className="relative rounded-xl overflow-hidden border border-slate-200 shadow-md" style={{ height: 440 }}>
       <MapContainer
         bounds={MAP_BOUNDS}
-        style={{ height: '100%', width: '100%', background: '#0f172a' }}
+        style={{ height: '100%', width: '100%', background: '#f8fafc' }}
         scrollWheelZoom
         zoomControl
         attributionControl
       >
-        {/* Dark maritime base tiles — CartoDB DarkMatter */}
+        {/* Light maritime base tiles — CartoDB Positron */}
         <TileLayer
           attribution={TILES_ATTR}
           url={TILES_URL}
@@ -159,86 +202,88 @@ export function VesselMap({ vessels, isLive }: VesselMapProps) {
           </Rectangle>
         ))}
 
-        {/* ── Vessel markers ── */}
-        {valid.map((v) => {
-          const fill = vesselColor(v);
-          const r = vesselRadius(v);
-          const underway = v.navstat === 0;
-          return (
-            <CircleMarker
-              key={v.mmsi}
-              center={[v.lat, v.lon]}
-              radius={r}
-              pathOptions={{
-                fillColor: fill,
-                fillOpacity: 0.92,
-                color: underway ? '#ffffff' : '#475569',
-                weight: v.isLngCandidate ? 1.5 : 1,
-              }}
-            >
-              <Tooltip direction="top" offset={[0, -7]} className="vessel-map-tooltip vessel-map-tooltip--vessel">
-                <div className="text-[11px] leading-snug">
-                  <p className="font-bold text-sm mb-1">
-                    {v.flag} {v.name}
-                  </p>
-                  <p className="text-slate-400 font-mono">MMSI {v.mmsi}{v.mmsi && ` · IMO ${(v as any).imo || '—'}`}</p>
-                  <p className="mt-0.5">
-                    <span className="text-slate-300">{v.speed.toFixed(1)} kn</span>
-                    {v.heading < 511 && (
-                      <span className="text-slate-400"> · Hdg {v.heading}°</span>
-                    )}
-                  </p>
-                  {v.destination && (
-                    <p className="text-cyan-300 mt-0.5">→ {v.destination}</p>
+        {/* ── Vessel markers — custom ship icons ── */}
+        {valid.map((v) => (
+          <Marker
+            key={v.mmsi}
+            position={[v.lat, v.lon]}
+            icon={createShipIcon(v)}
+          >
+            <Tooltip direction="top" offset={[0, -8]} className="vessel-map-tooltip vessel-map-tooltip--vessel">
+              <div className="text-[11px] leading-snug">
+                <p className="font-bold text-sm mb-1">{v.flag} {v.name}</p>
+                <p className="text-slate-400 font-mono text-[10px]">MMSI {v.mmsi}</p>
+                <p className="mt-0.5">
+                  <span className="text-slate-300">{v.speed.toFixed(1)} kn</span>
+                  {v.heading < 511 && (
+                    <span className="text-slate-400"> · Hdg {v.heading}°</span>
                   )}
-                  <p className={`mt-0.5 font-medium ${underway ? 'text-green-400' : 'text-slate-400'}`}>
-                    {NAVSTAT[v.navstat] ?? 'Other'}
-                  </p>
-                  {v.isLngCandidate && (
-                    <p className="text-cyan-400 font-semibold mt-0.5">⛽ LNG / Gas carrier</p>
-                  )}
-                </div>
-              </Tooltip>
-            </CircleMarker>
-          );
-        })}
+                </p>
+                {v.destination && (
+                  <p className="text-cyan-300 mt-0.5">→ {v.destination}</p>
+                )}
+                <p className={`mt-0.5 font-medium ${
+                  v.navstat === 0 ? 'text-green-400' : 'text-slate-400'
+                }`}>
+                  {NAVSTAT[v.navstat] ?? 'Other'}
+                </p>
+                {v.isLngCandidate && (
+                  <p className="text-cyan-400 font-semibold mt-0.5">⛽ LNG / Gas carrier</p>
+                )}
+              </div>
+            </Tooltip>
+          </Marker>
+        ))}
       </MapContainer>
 
-      {/* ── React legend overlay (above Leaflet layers) ── */}
+      {/* ── Legend overlay ── */}
       <div
         className="absolute bottom-8 right-3 z-[1000] pointer-events-none select-none"
         style={{ backdropFilter: 'blur(6px)' }}
       >
-        <div className="bg-slate-900/90 border border-slate-700 rounded-lg p-3 text-[11px] text-white min-w-[150px]">
-          <p className="text-slate-500 uppercase tracking-widest text-[9px] font-semibold mb-2">Vessels</p>
+        <div className="bg-white/95 border border-slate-200 shadow-lg rounded-lg p-3 text-[11px] text-slate-800 min-w-[152px]">
+          <p className="text-slate-400 uppercase tracking-widest text-[9px] font-semibold mb-2">Vessels</p>
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="w-3 h-3 rounded-full bg-cyan-400 border border-white flex-shrink-0" />
+            <span style={{ display:'inline-block', width:11, height:17, flexShrink:0 }}>
+              <svg viewBox="0 0 14 22" width="11" height="17">
+                <path d="M 7 1 L 13 18 L 10 15 L 7 17 L 4 15 L 1 18 Z" fill="#0e7490" stroke="#fff" strokeWidth="1.8" strokeLinejoin="round"/>
+                <circle cx="7" cy="12" r="2" fill="white" opacity="0.5"/>
+              </svg>
+            </span>
             <span>LNG / Gas carrier</span>
           </div>
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="w-3 h-3 rounded-full bg-amber-400 border border-white flex-shrink-0" />
+            <span style={{ display:'inline-block', width:11, height:17, flexShrink:0 }}>
+              <svg viewBox="0 0 14 22" width="11" height="17">
+                <path d="M 7 1 L 13 18 L 10 15 L 7 17 L 4 15 L 1 18 Z" fill="#b45309" stroke="#1e293b" strokeWidth="1.8" strokeLinejoin="round"/>
+              </svg>
+            </span>
             <span>Tanker underway</span>
           </div>
           <div className="flex items-center gap-2 mb-3">
-            <span className="w-3 h-3 rounded-full bg-slate-400 flex-shrink-0" />
-            <span>Anchored / Moored</span>
+            <span style={{ display:'inline-block', width:11, height:17, flexShrink:0 }}>
+              <svg viewBox="0 0 14 22" width="11" height="17">
+                <path d="M 7 1 L 13 18 L 10 15 L 7 17 L 4 15 L 1 18 Z" fill="#475569" stroke="#1e293b" strokeWidth="1.8" strokeLinejoin="round"/>
+              </svg>
+            </span>
+            <span className="text-slate-500">Anchored / Moored</span>
           </div>
-          <p className="text-slate-500 uppercase tracking-widest text-[9px] font-semibold mb-2">Risk Zones</p>
+          <p className="text-slate-400 uppercase tracking-widest text-[9px] font-semibold mb-2">Risk Zones</p>
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="w-3.5 h-2.5 flex-shrink-0 border border-red-400 bg-red-400/20 rounded-sm" />
-            <span className="text-red-300">Chokepoint</span>
+            <span className="w-3.5 h-2.5 flex-shrink-0 border-2 border-red-500 bg-red-200 rounded-sm" />
+            <span className="text-red-700">Chokepoint</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="w-3.5 h-2.5 flex-shrink-0 border border-orange-400 bg-orange-400/10 rounded-sm" style={{ borderStyle: 'dashed' }} />
-            <span className="text-orange-300">Conflict zone</span>
+            <span className="w-3.5 h-2.5 flex-shrink-0 border border-orange-400 bg-orange-100 rounded-sm" style={{ borderStyle:'dashed' }} />
+            <span className="text-orange-700">Conflict zone</span>
           </div>
         </div>
       </div>
 
-      {/* ── Live / demo indicator badge ── */}
+      {/* ── Demo mode badge ── */}
       {!isLive && (
         <div className="absolute top-3 left-3 z-[1000] pointer-events-none">
-          <span className="bg-amber-900/90 border border-amber-600 text-amber-300 text-[10px] font-semibold px-2 py-1 rounded">
+          <span className="bg-amber-50 border border-amber-400 text-amber-700 text-[10px] font-semibold px-2 py-1 rounded shadow-sm">
             ⚠ Demo positions — set AISSTREAM_API_KEY for live AIS
           </span>
         </div>

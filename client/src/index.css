@@ -187,6 +187,12 @@
   color: #94a3b8 !important;
 }
 
+/* Ship DivIcon — strip the default white square Leaflet adds */
+.vessel-ship-icon {
+  background: none !important;
+  border: none !important;
+}
+
 /* Zoom controls — dark style */
 .leaflet-control-zoom a {
   background: rgba(15, 23, 42, 0.9) !important;
