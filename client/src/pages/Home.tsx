@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
+import { VesselMap } from '@/components/VesselMap';
 import { getCachedData, setCachedData, isDataStale, getCacheAge, CACHE_KEYS, CACHE_DURATION } from '@/lib/cache';
 import {
   LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis,
@@ -116,16 +117,6 @@ const REGION_LABELS: Record<string, string> = {
   gulf_of_oman: 'Gulf of Oman', arabian_sea: 'Arabian Sea', red_sea: '⚠ Red Sea',
 };
 
-const getVesselSvgPos = (lon: number, region: string, mmsi: string): { x: number; y: number } => {
-  const code = mmsi.split('').reduce((s, c) => s + c.charCodeAt(0), 0);
-  const jitter = (base: number) => base + ((code % 22) - 11);
-  const clamp = (v: number) => Math.min(1, Math.max(0, v));
-  if (region === 'red_sea')      return { x: 80  + clamp((lon - 32)   / 12)  * 290, y: jitter(174) };
-  if (region === 'persian_gulf') return { x: 80  + clamp((lon - 48)   / 7.5) * 330, y: jitter(87)  };
-  if (region === 'hormuz')       return { x: 410 + clamp((lon - 55.5) / 2)   * 62,  y: jitter(87)  };
-  if (region === 'gulf_of_oman') return { x: 472 + clamp((lon - 57.5) / 4.5) * 238, y: jitter(87)  };
-  return { x: 710 + clamp((lon - 62) / 11) * 218, y: jitter(87) };
-};
 
 const FALLBACK_VESSEL_DATA = {
   vessels: [
@@ -156,7 +147,7 @@ const FALLBACK_VESSEL_DATA = {
   },
   fetchedAt: new Date().toISOString(),
   isLive: false,
-  source: 'Demo data — set AISHUB_USERNAME env var (free at aishub.net)',
+  source: 'Demo data — set AISSTREAM_API_KEY env var (free at aisstream.io)',
 };
 
 export default function Home() {
@@ -524,7 +515,7 @@ export default function Home() {
                 <CardDescription className="text-xs">
                   Persian Gulf · Strait of Hormuz · Red Sea · LNG tankers &amp; shipping traffic · Refreshes every 1 hr
                   {!vesselData.isLive && (
-                    <span className="ml-2 text-amber-600 font-medium">⚠ Demo data — set AISHUB_USERNAME env var for live AIS</span>
+                    <span className="ml-2 text-amber-600 font-medium">⚠ Demo data — set AISSTREAM_API_KEY for live AIS</span>
                   )}
                 </CardDescription>
               </div>
@@ -576,91 +567,9 @@ export default function Home() {
               </div>
             </div>
 
-            {/* SVG Maritime Corridor Map */}
-            <div className="rounded-lg overflow-hidden mb-4 border border-slate-700">
-              <svg viewBox="0 0 1000 210" className="w-full" style={{ background: '#0f172a', display: 'block' }}>
-                <defs>
-                  <radialGradient id="glowLng" cx="50%" cy="50%" r="50%">
-                    <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.7" />
-                    <stop offset="100%" stopColor="#22d3ee" stopOpacity="0" />
-                  </radialGradient>
-                  <radialGradient id="glowTanker" cx="50%" cy="50%" r="50%">
-                    <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.6" />
-                    <stop offset="100%" stopColor="#f59e0b" stopOpacity="0" />
-                  </radialGradient>
-                </defs>
-                {/* Ocean grid lines */}
-                {[0, 1, 2, 3].map(i => (
-                  <line key={i} x1="0" y1={i * 53} x2="1000" y2={i * 53} stroke="#1e3a5f" strokeWidth="0.5" opacity="0.7" />
-                ))}
-                {/* Persian Gulf water */}
-                <rect x="80" y="55" width="330" height="62" fill="#1d4ed8" opacity="0.22" />
-                {/* Hormuz chokepoint (red) */}
-                <rect x="410" y="51" width="62" height="70" fill="#991b1b" opacity="0.55" stroke="#ef4444" strokeWidth="1.5" />
-                {/* Gulf of Oman + Arabian Sea */}
-                <rect x="472" y="55" width="458" height="62" fill="#1e40af" opacity="0.15" />
-                {/* Qatar source box */}
-                <rect x="5" y="58" width="73" height="56" rx="5" fill="#1c1009" stroke="#ca8a04" strokeWidth="1.5" />
-                <text x="11" y="74" fill="#fef08a" fontSize="9" fontFamily="monospace" fontWeight="bold">⬡ QATAR</text>
-                <text x="11" y="87" fill="#ca8a04" fontSize="7.5" fontFamily="monospace">RAS LAFFAN</text>
-                <text x="11" y="100" fill="#92400e" fontSize="7">LNG SOURCE</text>
-                <text x="11" y="112" fill="#92400e" fontSize="7">50% India LNG</text>
-                {/* India destination box */}
-                <rect x="930" y="60" width="68" height="54" rx="5" fill="#052e16" stroke="#16a34a" strokeWidth="1.5" />
-                <text x="936" y="76" fill="#86efac" fontSize="9" fontFamily="monospace" fontWeight="bold">⬡ INDIA</text>
-                <text x="936" y="89" fill="#4ade80" fontSize="7">DAHEJ·KOCHI</text>
-                <text x="936" y="101" fill="#4ade80" fontSize="7">HAZIRA·MUNDRA</text>
-                <text x="936" y="112" fill="#16a34a" fontSize="7">DESTINATION</text>
-                {/* Route arrows */}
-                <path d="M 80 87 L 408 87" stroke="#3b82f6" strokeWidth="2" strokeDasharray="10,5" opacity="0.85" />
-                <path d="M 472 87 L 928 87" stroke="#3b82f6" strokeWidth="2" strokeDasharray="10,5" opacity="0.85" />
-                <polygon points="922,83 922,91 930,87" fill="#3b82f6" opacity="0.85" />
-                {/* Lane labels */}
-                <text x="245" y="50" fill="#93c5fd" fontSize="10" fontFamily="monospace" fontWeight="bold" textAnchor="middle">PERSIAN GULF</text>
-                <text x="700" y="50" fill="#93c5fd" fontSize="10" fontFamily="monospace" fontWeight="bold" textAnchor="middle">GULF OF OMAN · ARABIAN SEA</text>
-                {/* Hormuz labels */}
-                <text x="441" y="46" fill="#fca5a5" fontSize="9" fontFamily="monospace" fontWeight="bold" textAnchor="middle">HORMUZ</text>
-                <text x="441" y="131" fill="#fca5a5" fontSize="8" textAnchor="middle">⚠ CHOKEPOINT</text>
-                <text x="441" y="142" fill="#fca5a5" fontSize="7.5" textAnchor="middle">Iran/Oman border</text>
-                {/* Red Sea lane */}
-                <rect x="80" y="153" width="290" height="42" fill="#450a0a" opacity="0.6" stroke="#ef4444" strokeWidth="0.5" strokeDasharray="6,3" />
-                <text x="215" y="148" fill="#fca5a5" fontSize="10" fontFamily="monospace" fontWeight="bold" textAnchor="middle">RED SEA CORRIDOR</text>
-                <text x="215" y="188" fill="#7f1d1d" fontSize="8" textAnchor="middle">Houthi threat zone</text>
-                {/* Bab-el-Mandeb */}
-                <rect x="370" y="151" width="68" height="46" rx="3" fill="#7f1d1d" opacity="0.8" stroke="#ef4444" strokeWidth="1.5" />
-                <text x="404" y="167" fill="#fca5a5" fontSize="8.5" fontFamily="monospace" fontWeight="bold" textAnchor="middle">BAB-EL-MANDEB</text>
-                <text x="404" y="179" fill="#ef4444" fontSize="8" textAnchor="middle">⚠ HOUTHI ZONE</text>
-                <text x="404" y="191" fill="#fca5a5" fontSize="7" textAnchor="middle">Ships rerouting</text>
-                {/* Alt route connector */}
-                <path d="M 438 172 Q 460 145 472 110" stroke="#ef4444" strokeWidth="1.5" strokeDasharray="5,4" fill="none" opacity="0.7" />
-                <text x="480" y="148" fill="#ef4444" fontSize="8" fontFamily="monospace">↗ CAPE ROUTE</text>
-                <text x="480" y="159" fill="#6b7280" fontSize="7">(+14 days)</text>
-                {/* Vessel dots */}
-                {vesselData.vessels.map((v: any) => {
-                  const isLng = v.isLngCandidate;
-                  const isTanker = v.type >= 80 && v.type <= 89;
-                  const isUnderway = v.navstat === 0;
-                  const pos = getVesselSvgPos(v.lon, v.region, v.mmsi);
-                  const color = isLng ? '#22d3ee' : isTanker ? '#f59e0b' : '#9ca3af';
-                  const r = isLng ? 6 : 5;
-                  return (
-                    <g key={v.mmsi}>
-                      {isLng && <circle cx={pos.x} cy={pos.y} r={16} fill="url(#glowLng)" />}
-                      {!isLng && isTanker && <circle cx={pos.x} cy={pos.y} r={13} fill="url(#glowTanker)" />}
-                      <circle cx={pos.x} cy={pos.y} r={r} fill={color} stroke={isUnderway ? '#fff' : '#6b7280'} strokeWidth="1" opacity="0.95" />
-                      {isUnderway && <circle cx={pos.x} cy={pos.y} r={r + 2} fill="none" stroke={color} strokeWidth="0.8" opacity="0.4" />}
-                    </g>
-                  );
-                })}
-                {/* Legend */}
-                <rect x="812" y="155" width="184" height="52" rx="4" fill="#111827" stroke="#374151" strokeWidth="1" opacity="0.95" />
-                <circle cx="825" cy="168" r="5" fill="#22d3ee" />
-                <text x="835" y="172" fill="#e5e7eb" fontSize="8.5">LNG / gas carrier (cyan)</text>
-                <circle cx="825" cy="184" r="4.5" fill="#f59e0b" />
-                <text x="835" y="188" fill="#e5e7eb" fontSize="8.5">Oil / product tanker</text>
-                <circle cx="825" cy="199" r="4" fill="none" stroke="#22d3ee" strokeWidth="1.2" />
-                <text x="835" y="203" fill="#6b7280" fontSize="8">White border = underway</text>
-              </svg>
+            {/* Real geo map — CartoDB dark maritime tiles */}
+            <div className="mb-4">
+              <VesselMap vessels={vesselData.vessels} isLive={vesselData.isLive} />
             </div>
 
             {/* Vessel table */}
@@ -714,7 +623,7 @@ export default function Home() {
             </div>
             <p className="text-xs text-gray-400 mt-2">
               Source: {vesselData.source} · AIS position data · refreshes every 1 hour ·{' '}
-              <a href="https://www.aishub.net" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">aishub.net</a>
+              <a href="https://aisstream.io" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">aisstream.io</a>
             </p>
           </CardContent>
         </Card>
