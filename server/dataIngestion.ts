@@ -5,22 +5,13 @@
  */
 
 import dns from "node:dns";
-import { setGlobalDispatcher, Agent } from "undici";
 import { getDb } from "./db";
 import { futuresData, priceHistory, supplyMetrics, terminalReserves, alerts, geopoliticalEvents } from "../drizzle/schema";
 import { desc, eq, and, gte } from "drizzle-orm";
 import { notifyOwner } from "./_core/notification";
 
-// Force IPv4 for ALL outbound fetch connections (undici socket level).
-// dns.setDefaultResultOrder only affects DNS lookup preference; Railway still
-// dials IPv6 via undici. setGlobalDispatcher with family:4 forces TCP over IPv4.
+// Prefer IPv4 DNS results — Yahoo Finance blocks connections from IPv6 cloud IPs.
 dns.setDefaultResultOrder("ipv4first");
-try {
-  setGlobalDispatcher(new Agent({ connect: { family: 4 } }));
-  console.log("[DataIngestion] Global undici dispatcher set to IPv4-only");
-} catch (e) {
-  console.warn("[DataIngestion] Could not set undici IPv4 dispatcher:", e);
-}
 
 // ─── Instrument Definitions ───────────────────────────────────────────────────
 export const INSTRUMENTS = [
