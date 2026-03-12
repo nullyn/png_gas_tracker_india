@@ -74,7 +74,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState('overview');
 
   const { data: supplyMetrics, refetch: refetchSupply } = trpc.dashboard.latestSupplyMetrics.useQuery(undefined, { refetchInterval: 300_000 });
-  const { data: metricsHistory } = trpc.dashboard.supplyMetricsHistory.useQuery(undefined, { refetchInterval: 300_000 });
+  const { data: metricsHistory, refetch: refetchMetricsHistory } = trpc.dashboard.supplyMetricsHistory.useQuery(undefined, { refetchInterval: 300_000 });
   const { data: futures, refetch: refetchFutures } = trpc.dashboard.latestFutures.useQuery(undefined, { refetchInterval: 300_000 });
   const { data: terminals } = trpc.dashboard.terminalReserves.useQuery(undefined, { refetchInterval: 300_000 });
   const { data: activeAlerts } = trpc.dashboard.activeAlerts.useQuery(undefined, { refetchInterval: 60_000 });
@@ -86,6 +86,13 @@ export default function Home() {
       setLastRefresh(new Date());
       refetchSupply();
       refetchFutures();
+    },
+  });
+
+  const backfillMutation = trpc.dashboard.backfillHistory.useMutation({
+    onSuccess: () => {
+      refetchMetricsHistory();
+      console.log("Backfill complete");
     },
   });
 
@@ -181,6 +188,10 @@ export default function Home() {
               <span>Refreshed: <span className="font-mono text-gray-700">{lastRefresh.toLocaleTimeString('en-IN', { hour12: false })}</span></span>
               <LiveBadge time={supplyMetrics?.fetchedAt} />
             </div>
+            <Button size="sm" variant="outline" onClick={() => backfillMutation.mutate()} disabled={backfillMutation.isPending} className="gap-1.5" title="Backfill 30 days of historical supply metrics">
+              <Database className={`w-3.5 h-3.5 ${backfillMutation.isPending ? 'animate-spin' : ''}`} />
+              {backfillMutation.isPending ? 'Backfilling…' : 'Backfill 30d'}
+            </Button>
             <Button size="sm" variant="outline" onClick={() => refreshMutation.mutate()} disabled={refreshMutation.isPending} className="gap-1.5">
               <RefreshCw className={`w-3.5 h-3.5 ${refreshMutation.isPending ? 'animate-spin' : ''}`} />
               {refreshMutation.isPending ? 'Refreshing…' : 'Refresh All'}
@@ -769,9 +780,9 @@ export default function Home() {
                       <p className="text-xs text-gray-600 mb-1">{e.summary}</p>
                       {e.impactOnLng && <p className="text-xs text-gray-700 font-medium bg-white bg-opacity-60 rounded px-2 py-1">Impact: {e.impactOnLng}</p>}
                       <div className="flex items-center justify-between mt-1.5">
-                        <span className="text-xs text-gray-400">{e.region}</span>
-                        <span className="text-xs text-blue-600 font-semibold">Source: {e.source}</span>
-                      </div>
+                         <span className="text-xs text-gray-400">{e.region} · {new Date(e.timestamp).toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                         <span className="text-xs text-blue-600 font-semibold">Source: {e.source}</span>
+                       </div>
                     </div>
                   ))}
                 </CardContent>

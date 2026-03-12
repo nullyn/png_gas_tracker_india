@@ -566,21 +566,16 @@ export async function backfillSupplyMetricsHistory(days: number = 30): Promise<v
   const db = await getDb();
   if (!db) return;
 
-  // Check if we already have historical data
-  const existingCount = await db.select({ count: 1 }).from(supplyMetrics)
-    .orderBy(desc(supplyMetrics.timestamp))
-    .limit(1);
+  // Count existing records
+  const allRecords = await db.select().from(supplyMetrics).orderBy(desc(supplyMetrics.timestamp));
   
-  if (existingCount.length > 0) {
-    const oldest = await db.select().from(supplyMetrics)
-      .orderBy(supplyMetrics.timestamp)
-      .limit(1);
-    if (oldest.length > 0) {
-      const ageMs = Date.now() - new Date(oldest[0].timestamp!).getTime();
-      if (ageMs > days * 24 * 60 * 60 * 1000) {
-        console.log("[DataIngestion] Historical data already backfilled");
-        return;
-      }
+  // If we already have enough historical records (30+), skip
+  if (allRecords.length >= days) {
+    const oldest = allRecords[allRecords.length - 1];
+    const ageMs = Date.now() - new Date(oldest.timestamp!).getTime();
+    if (ageMs >= days * 24 * 60 * 60 * 1000) {
+      console.log(`[DataIngestion] Already have ${allRecords.length} records spanning ${Math.floor(ageMs / (24 * 60 * 60 * 1000))} days. Skipping backfill.`);
+      return;
     }
   }
 
