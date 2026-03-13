@@ -137,3 +137,31 @@ export const geopoliticalEvents = mysqlTable("geopolitical_events", {
 
 export type GeopoliticalEvent = typeof geopoliticalEvents.$inferSelect;
 export type InsertGeopoliticalEvent = typeof geopoliticalEvents.$inferInsert;
+
+export const xPosts = mysqlTable("x_posts", {
+  id: int("id").autoincrement().primaryKey(),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+  author: varchar("author", { length: 100 }).notNull(),
+  handle: varchar("handle", { length: 255 }),
+  avatar: varchar("avatar", { length: 10 }),
+  text: text("text").notNull(),
+  likes: int("likes").default(0),
+  retweets: int("retweets").default(0),
+  url: varchar("url", { length: 1000 }),
+  fetchedAt: timestamp("fetched_at").defaultNow(),
+});
+
+export type XPost = typeof xPosts.$inferSelect;
+export type InsertXPost = typeof xPosts.$inferInsert;
+
+export const googleTrends = mysqlTable("google_trends", {
+  id: int("id").autoincrement().primaryKey(),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+  day: varchar("day", { length: 50 }).notNull(),
+  value: int("value").notNull(),
+  keyword: varchar("keyword", { length: 255 }).default("induction cooking"),
+  fetchedAt: timestamp("fetched_at").defaultNow(),
+});
+
+export type GoogleTrend = typeof googleTrends.$inferSelect;
+export type InsertGoogleTrend = typeof googleTrends.$inferInsert;

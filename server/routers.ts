@@ -4,7 +4,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
 import { getDb } from "./db";
-import { futuresData, supplyMetrics, terminalReserves, alerts, geopoliticalEvents, priceHistory } from "../drizzle/schema";
+import { futuresData, supplyMetrics, terminalReserves, alerts, geopoliticalEvents, priceHistory, xPosts, googleTrends } from "../drizzle/schema";
 import { desc, eq, gte, and } from "drizzle-orm";
 import { runFullDataRefresh, INSTRUMENTS, backfillSupplyMetricsHistory } from "./dataIngestion";
 import { z } from "zod/v4";
@@ -299,7 +299,24 @@ export const appRouter = router({
     instruments: publicProcedure.query(() => INSTRUMENTS),
 
     vesselSnapshot: publicProcedure.query(() => getVesselSnapshot()),
-  }),
-});
+
+    xPostsTrending: publicProcedure.query(async () => {
+      const db = await getDb();
+      if (!db) return [];
+      const results = await db.select().from(xPosts)
+        .orderBy(desc(xPosts.fetchedAt)).limit(5);
+      return results;
+    }),
+
+    googleTrendsCooking: publicProcedure.query(async () => {
+      const db = await getDb();
+      if (!db) return [];
+      const results = await db.select().from(googleTrends)
+        .where(eq(googleTrends.keyword, 'induction cooking'))
+        .orderBy(googleTrends.day);
+      return results;
+      }),
+      }),
+      });
 
 export type AppRouter = typeof appRouter;

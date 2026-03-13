@@ -136,6 +136,8 @@ export default function Home() {
   const { data: activeAlerts } = trpc.dashboard.activeAlerts.useQuery(undefined, { staleTime: 30 * 60 * 1000, gcTime: 60 * 60 * 1000 });
   const { data: geoEvents } = trpc.dashboard.geopoliticalEvents.useQuery(undefined, { staleTime: 30 * 60 * 1000, gcTime: 60 * 60 * 1000 });
   const { data: chartHistory } = trpc.dashboard.priceHistory.useQuery({ symbol: selectedSymbol, days: 30 }, { staleTime: 30 * 60 * 1000, gcTime: 60 * 60 * 1000 });
+  const { data: xPosts } = trpc.dashboard.xPostsTrending.useQuery(undefined, { staleTime: 60 * 60 * 1000, gcTime: 60 * 60 * 1000 });
+  const { data: googleTrendData } = trpc.dashboard.googleTrendsCooking.useQuery(undefined, { staleTime: 60 * 60 * 1000, gcTime: 60 * 60 * 1000 });
 
   const _cachedVessels = getCachedData<any>(CACHE_KEYS.VESSELS, 60 * 60 * 1000);
   // Poll every 5 minutes — cheap read from server's in-memory map (persistent WS accumulates vessels)
@@ -1148,7 +1150,7 @@ export default function Home() {
                  </div>
                </CardHeader>
                <CardContent className="pt-3 space-y-2 max-h-[520px] overflow-y-auto">
-                 {FALLBACK_X_POSTS.map((post: any) => (
+                 {((xPosts && xPosts.length > 0 ? xPosts : FALLBACK_X_POSTS) as any[]).map((post: any) => (
                    <a key={post.id} href={post.url} target="_blank" rel="noopener noreferrer" className="block p-3 bg-slate-50 rounded border border-slate-200 cursor-pointer hover:bg-slate-100 hover:shadow-md transition-all">
                      <div className="flex gap-2 mb-2">
                        <span className="text-2xl shrink-0">{post.avatar}</span>
@@ -1183,7 +1185,7 @@ export default function Home() {
                </CardHeader>
                <CardContent className="pt-4">
                  <ResponsiveContainer width="100%" height={240}>
-                   <AreaChart data={FALLBACK_GOOGLE_TRENDS}>
+                   <AreaChart data={googleTrendData && googleTrendData.length > 0 ? googleTrendData.map(t => ({ day: t.day, value: t.value })) : FALLBACK_GOOGLE_TRENDS}>
                      <defs>
                        <linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1">
                          <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
