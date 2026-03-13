@@ -676,6 +676,9 @@ export async function fetchAndStoreXPosts(): Promise<void> {
     'Average LNG vessel transit time increases by 10 days',
   ];
 
+  // Clear old posts before inserting fresh batch
+  await db.delete(xPosts).catch(() => {});
+
   for (let i = 0; i < 5; i++) {
     const account = accounts[i];
     const topic = topics[i];
@@ -726,6 +729,9 @@ export async function fetchAndStoreGoogleTrends(): Promise<void> {
       fetchedAt: now,
     });
   }
+
+  // Clear old trends before inserting fresh batch
+  await db.delete(googleTrends).catch(() => {});
 
   for (const trend of trendData) {
     await db.insert(googleTrends).values(trend).catch(() => {});

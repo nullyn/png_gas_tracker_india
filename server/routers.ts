@@ -303,18 +303,28 @@ export const appRouter = router({
     xPostsTrending: publicProcedure.query(async () => {
       const db = await getDb();
       if (!db) return [];
-      const results = await db.select().from(xPosts)
-        .orderBy(desc(xPosts.fetchedAt)).limit(5);
-      return results;
+      try {
+        const results = await db.select().from(xPosts)
+          .orderBy(desc(xPosts.fetchedAt)).limit(5);
+        return results;
+      } catch (err) {
+        console.warn("[Dashboard] xPostsTrending query failed (table may not exist yet):", (err as Error).message);
+        return [];
+      }
     }),
 
     googleTrendsCooking: publicProcedure.query(async () => {
       const db = await getDb();
       if (!db) return [];
-      const results = await db.select().from(googleTrends)
-        .where(eq(googleTrends.keyword, 'induction cooking'))
-        .orderBy(googleTrends.day);
-      return results;
+      try {
+        const results = await db.select().from(googleTrends)
+          .where(eq(googleTrends.keyword, 'induction cooking'))
+          .orderBy(googleTrends.day);
+        return results;
+      } catch (err) {
+        console.warn("[Dashboard] googleTrendsCooking query failed (table may not exist yet):", (err as Error).message);
+        return [];
+      }
       }),
       }),
       });

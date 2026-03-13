@@ -1118,7 +1118,7 @@ export default function Home() {
                 </CardHeader>
                 <CardContent className="pt-3 space-y-2 max-h-[520px] overflow-y-auto">
                   {((geoEvents && geoEvents.length > 0 ? geoEvents : FALLBACK_GEO) as any[]).map((e: any) => (
-                    <a key={e.id} href={e.url || '#'} target="_blank" rel="noopener noreferrer" className={`block p-3 rounded border cursor-pointer hover:shadow-md transition-all ${e.severity === 'critical' ? 'border-red-200 bg-red-50 hover:bg-red-100' : e.severity === 'high' ? 'border-orange-200 bg-orange-50 hover:bg-orange-100' : e.severity === 'medium' ? 'border-yellow-200 bg-yellow-50 hover:bg-yellow-100' : 'border-blue-200 bg-blue-50 hover:bg-blue-100'}`}>
+                    <a key={e.id} href={e.sourceUrl || e.url || '#'} target="_blank" rel="noopener noreferrer" className={`block p-3 rounded border cursor-pointer hover:shadow-md transition-all ${e.severity === 'critical' ? 'border-red-200 bg-red-50 hover:bg-red-100' : e.severity === 'high' ? 'border-orange-200 bg-orange-50 hover:bg-orange-100' : e.severity === 'medium' ? 'border-yellow-200 bg-yellow-50 hover:bg-yellow-100' : 'border-blue-200 bg-blue-50 hover:bg-blue-100'}`}>
                       <div className="flex items-start justify-between mb-1">
                         <p className="font-semibold text-sm text-gray-900 underline decoration-blue-500">{e.title}</p>
                         <Badge className={e.severity === 'critical' ? 'bg-red-600 text-white' : e.severity === 'high' ? 'bg-orange-500 text-white' : e.severity === 'medium' ? 'bg-yellow-500 text-white' : 'bg-blue-500 text-white'}>
