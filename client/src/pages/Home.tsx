@@ -1200,9 +1200,19 @@ export default function Home() {
                    </AreaChart>
                  </ResponsiveContainer>
                  <div className="mt-3 p-2.5 bg-blue-50 rounded border border-blue-200 text-center">
-                   <p className="text-xs font-semibold text-blue-900">Current: <span className="text-lg text-blue-700">88</span> / 100</p>
-                   <p className="text-xs text-blue-700 mt-0.5">↑ 95% surge in last 3 days</p>
-                 </div>
+                    {(() => {
+                      const trendArr = googleTrendData && googleTrendData.length > 0 ? googleTrendData : FALLBACK_GOOGLE_TRENDS;
+                      const latest = trendArr[trendArr.length - 1]?.value ?? 0;
+                      const threeDaysAgo = trendArr.length >= 4 ? trendArr[trendArr.length - 4]?.value ?? latest : latest;
+                      const surgePercent = threeDaysAgo > 0 ? (((latest - threeDaysAgo) / threeDaysAgo) * 100).toFixed(0) : '0';
+                      return (
+                        <>
+                          <p className="text-xs font-semibold text-blue-900">Current: <span className="text-lg text-blue-700">{latest}</span> / 100</p>
+                          <p className="text-xs text-blue-700 mt-0.5">{Number(surgePercent) > 0 ? `↑ ${surgePercent}%` : `↓ ${Math.abs(Number(surgePercent))}%`} change in last 3 days</p>
+                        </>
+                      );
+                    })()}
+                  </div>
                </CardContent>
              </Card>
             </div>
